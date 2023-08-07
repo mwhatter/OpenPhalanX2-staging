@@ -33,13 +33,13 @@ def submit_file_to_anomali(file_path, api_key):
     return response.json(), note
 
 if __name__ == "__main__":
-    file_path = sys.argv[1]
+    directory_path = sys.argv[1]
     api_key = sys.argv[2]
-    response, note = submit_file_to_anomali(file_path, api_key)
-    output = {
-        "Response": response,
-        "Note": note
-    }
-    print(json.dumps(output))
+    for file_name in os.listdir(directory_path):
+        file_path = os.path.join(directory_path, file_name)
+        response, note = submit_file_to_anomali(file_path, api_key)
+        print(f"Submitted file {file_name}. Response: {response}, Note: {note}")
+
+
 
 

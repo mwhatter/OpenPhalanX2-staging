@@ -1,22 +1,23 @@
-# mass_submit_files_cuckoo.py
+# mass_submit_files_falcon.py
 import requests
 import os
 import json
 import sys
 import glob
 
+
 $apiKey = "redacted"
 
-def submit_file_cuckoo(filename):
-    headers = {"Authorization": "Bearer YOURTOKEN"}
+def submit_file_falcon(filename):
+    headers = {"APIKEY": "YOUR_API_KEY"}
     with open(filename, "rb") as sample:
         files = {"file": (os.path.basename(filename), sample)}
-        response = requests.post("http://cuckoo-host:8090/tasks/create/submit", files=files, headers=headers)
+        response = requests.post("https://www.hybrid-analysis.com/api/v2/submit/file", files=files, headers=headers)
 
     json_response = response.json()
 
-    return json_response['task_id']
+    return json_response['job_id']
 
 directory_path = sys.argv[1]
 for file_path in glob.glob(directory_path + '/*'):
-    print(submit_file_cuckoo(file_path))
+    print(submit_file_falcon(file_path))

@@ -4,6 +4,8 @@ import os
 import json
 import sys
 
+$apiKey = "redacted"
+
 def submit_file_cuckoo(filename):
     headers = {"Authorization": "Bearer YOURTOKEN"}
     with open(filename, "rb") as sample:

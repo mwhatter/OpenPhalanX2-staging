@@ -1,9 +1,9 @@
-# mass_submit_files_cuckoo.py
+# submit_file_cuckoo.py
 import requests
 import os
 import json
 import sys
-import glob
+
 
 $apiKey = "redacted"
 
@@ -17,6 +17,4 @@ def submit_file_cuckoo(filename):
 
     return json_response['task_id']
 
-directory_path = sys.argv[1]
-for file_path in glob.glob(directory_path + '/*'):
-    print(submit_file_cuckoo(file_path))
+print(submit_file_cuckoo(sys.argv[1]))

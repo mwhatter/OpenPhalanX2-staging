@@ -5,6 +5,9 @@ import os
 from datetime import datetime
 import hashlib
 
+
+$apiKey = "redacted"
+
 def calculate_sha256(file_path):
     sha256_hash = hashlib.sha256()
     with open(file_path,"rb") as f:
@@ -38,3 +41,5 @@ if __name__ == "__main__":
         "Note": note
     }
     print(json.dumps(output))
+
+

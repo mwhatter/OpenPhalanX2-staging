@@ -5,27 +5,36 @@ Add-Type -AssemblyName System.Drawing
 $storedPath = ".\Tools\Scripts\Integrations\Stored"
 $inusePath = ".\Tools\Scripts\Integrations\Inuse"
 
+# Functions to manage API key
+function Redact-ApiKeyInScript {
+    param ($scriptPath)
+    $scriptContent = Get-Content -Path $scriptPath -Raw
+    $redactedScriptContent = $scriptContent -replace '\$apiKey\s*=\s*"([^"]+)"', '$apiKey = "redacted"'
+    Set-Content -Path $scriptPath -Value $redactedScriptContent
+}
+
 function Get-ApiKeyFromScript {
     param ($scriptPath)
     $scriptContent = Get-Content -Path $scriptPath -Raw
     if ($scriptContent -match '\$apiKey\s*=\s*"([^"]+)"') {
         return $matches[1]
+    } else {
+        return $null
     }
-    return $null
 }
 
+# Create form
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'API Credentials'
-$form.Size = New-Object System.Drawing.Size(865, 360)  # Adjusted form width
+$form.Size = New-Object System.Drawing.Size(890, 360)
 $form.StartPosition = 'CenterScreen'
 
-$apiProviders = @('Anomali', 'VMRay', 'VirusTotal', 'PulseDive', 'Joe-Sandbox', 'Manalyzer', 'Opswat', 'Hybrid-Analysis', 'Cuckoo')
-$apiTypes = @('URL', 'File', 'Directory', 'Intel')
-
+$apiProviders = @('Anomali', 'VMRay', 'VirusTotal', 'PulseDive', 'Joe-Sandbox', 'Manalyzer', 'Opswat', 'Hybrid Analysis', 'Cuckoo')
 $paddingTop = 10
 
 foreach ($apiProvider in $apiProviders) {
     $mainCheckbox = New-Object System.Windows.Forms.CheckBox
+    $mainCheckbox.Name = "${apiProvider}-mainCheckbox"
     $mainCheckbox.Location = New-Object System.Drawing.Point(10, $paddingTop)
     $mainCheckbox.Size = New-Object System.Drawing.Size(20,20)
     
@@ -35,91 +44,82 @@ foreach ($apiProvider in $apiProviders) {
     $label.Text = $apiProvider
 
     $labelURLDetonation = New-Object System.Windows.Forms.Label
-    $labelURLDetonation.Location = New-Object System.Drawing.Point(140, $paddingTop)
+    $labelURLDetonation.Location = New-Object System.Drawing.Point(150, $paddingTop)
     $labelURLDetonation.Size = New-Object System.Drawing.Size(100,20)
     $labelURLDetonation.Text = "URL Detonation?"
 
     $checkboxURLDetonation = New-Object System.Windows.Forms.CheckBox
-    $checkboxURLDetonation.Location = New-Object System.Drawing.Point(240, $paddingTop)
+    $checkboxURLDetonation.Location = New-Object System.Drawing.Point(250, $paddingTop)
     $checkboxURLDetonation.Size = New-Object System.Drawing.Size(20,20)
-    $checkboxURLDetonation.Name = "$apiProvider-URLDetonation?"
+    $checkboxURLDetonation.Name = "${apiProvider}-URLDetonation"
 
     $labelFileDetonation = New-Object System.Windows.Forms.Label
-    $labelFileDetonation.Location = New-Object System.Drawing.Point(270, $paddingTop)
+    $labelFileDetonation.Location = New-Object System.Drawing.Point(280, $paddingTop)
     $labelFileDetonation.Size = New-Object System.Drawing.Size(100,20)
     $labelFileDetonation.Text = "File Detonation?"
 
     $checkboxFileDetonation = New-Object System.Windows.Forms.CheckBox
-    $checkboxFileDetonation.Location = New-Object System.Drawing.Point(370, $paddingTop)
+    $checkboxFileDetonation.Location = New-Object System.Drawing.Point(380, $paddingTop)
     $checkboxFileDetonation.Size = New-Object System.Drawing.Size(20,20)
-    $checkboxFileDetonation.Name = "$apiProvider-FileDetonation?"
+    $checkboxFileDetonation.Name = "${apiProvider}-FileDetonation"
 
     $labelDirectory = New-Object System.Windows.Forms.Label
-    $labelDirectory.Location = New-Object System.Drawing.Point(400, $paddingTop)
+    $labelDirectory.Location = New-Object System.Drawing.Point(410, $paddingTop)
     $labelDirectory.Size = New-Object System.Drawing.Size(130,20)
     $labelDirectory.Text = "Directory Detonation?"
 
     $checkboxDirectory = New-Object System.Windows.Forms.CheckBox
-    $checkboxDirectory.Location = New-Object System.Drawing.Point(530, $paddingTop)  # Adjusted location
+    $checkboxDirectory.Location = New-Object System.Drawing.Point(540, $paddingTop)
     $checkboxDirectory.Size = New-Object System.Drawing.Size(20,20)
-    $checkboxDirectory.Name = "$apiProvider-Directory"
+    $checkboxDirectory.Name = "${apiProvider}-Directory"
     $checkboxDirectory.Enabled = $false
 
-    # Store this checkbox with the others in the Tag property of the mainCheckbox
-    $mainCheckbox.Tag += $checkboxDirectory
-
     $labelIntel = New-Object System.Windows.Forms.Label
-    $labelIntel.Location = New-Object System.Drawing.Point(560, $paddingTop)
-    $labelIntel.Size = New-Object System.Drawing.Size(40,20)
+    $labelIntel.Location = New-Object System.Drawing.Point(570, $paddingTop)
+    $labelIntel.Size = New-Object System.Drawing.Size(50,20)
     $labelIntel.Text = "Intel?"
 
     $checkboxIntel = New-Object System.Windows.Forms.CheckBox
-    $checkboxIntel.Location = New-Object System.Drawing.Point(600, $paddingTop)
+    $checkboxIntel.Location = New-Object System.Drawing.Point(620, $paddingTop)
     $checkboxIntel.Size = New-Object System.Drawing.Size(20,20)
-    $checkboxIntel.Name = "$apiProvider-Intel?"
-
-    $checkboxURLDetonation.Enabled = $false
-    $checkboxFileDetonation.Enabled = $false
+    $checkboxIntel.Name = "${apiProvider}-Intel"
     $checkboxIntel.Enabled = $false
 
     $textbox = New-Object System.Windows.Forms.TextBox
-    $textbox.Location = New-Object System.Drawing.Point(630, $paddingTop)
+    $textbox.Name = "${apiProvider}-textbox"
+    $textbox.Location = New-Object System.Drawing.Point(650, $paddingTop)
     $textbox.Size = New-Object System.Drawing.Size(210,20)
     $textbox.Enabled = $false
+    $mainCheckbox.Tag = @($checkboxURLDetonation, $checkboxFileDetonation, $checkboxDirectory, $checkboxIntel, $textbox)
 
-    # Store the related controls in an array in the Tag property
-    $mainCheckbox.Tag = @($textbox, $checkboxURLDetonation, $checkboxFileDetonation, $checkboxIntel)
+    $checkboxURLDetonation.Enabled = $false
+    $checkboxFileDetonation.Enabled = $false
+    $checkboxDirectory.Enabled = $false
+    $checkboxIntel.Enabled = $false
+    $textbox.Enabled = $false
 
-    # Using Add_Click instead of Add_CheckedChanged
+
+    # When main checkbox is clicked
     $mainCheckbox.Add_Click({
         # The controls are stored in the Tag property of the checkbox
         $relatedControls = $this.Tag
         # Enable or disable the related controls based on checkbox state
         $relatedControls | ForEach-Object { $_.Enabled = $this.Checked }
-    })
+    })    
 
-    # Check if corresponding script exists in "Inuse" directory
-    foreach ($apiType in $apiTypes) {
-        $scriptName = "Integration_${apiProvider}_${apiType}.py"
+    # Populate controls based on existing scripts
+    $scriptTypes = @("URL", "File", "Directory", "Intel")
+    foreach ($type in $scriptTypes) {
+        $scriptName = "Integration_${apiProvider}_${type}.py"
         $scriptPath = Join-Path -Path $inusePath -ChildPath $scriptName
         if (Test-Path $scriptPath) {
-            switch ($apiType) {
-                'URL' {
-                    $checkboxURLDetonation.Checked = $true
-                }
-                'File' {
-                    $checkboxFileDetonation.Checked = $true
-                }
-                'Directory' {
-                    # Assuming you have another checkbox for 'Directory'. If not, adjust accordingly.
-                    $checkboxDirectory.Checked = $true
-                }
-                'Intel' {
-                    $checkboxIntel.Checked = $true
-                }
+            switch ($type) {
+                'URL' { $checkboxURLDetonation.Checked = $true }
+                'File' { $checkboxFileDetonation.Checked = $true }
+                'Directory' { $checkboxDirectory.Checked = $true }
+                'Intel' { $checkboxIntel.Checked = $true }
             }
 
-            # Populate the textbox with the API key from the script
             $apiKey = Get-ApiKeyFromScript -scriptPath $scriptPath
             if ($apiKey) {
                 $textbox.Text = $apiKey
@@ -132,38 +132,63 @@ foreach ($apiProvider in $apiProviders) {
 }
 
 $executeButton = New-Object System.Windows.Forms.Button
-$executeButton.Location = New-Object System.Drawing.Point(320, 280)
-$executeButton.Size = New-Object System.Drawing.Size(150, 30)
+$executeButton.Location = New-Object System.Drawing.Point(290, 270)
+$executeButton.Size = New-Object System.Drawing.Size(240, 30)
 $executeButton.Text = "Activate"
 $executeButton.Add_Click({
-    # Clear 'Inuse' directory first
-    Get-ChildItem $inUsePath -Filter "Integration_*.py" | ForEach-Object {
-        Move-Item $_.FullName (Join-Path $storedPath $_.Name) -Force
-    }
+    foreach ($provider in $apiProviders) {
+        $scriptTypes = @{
+            "URL" = $form.Controls["${provider}-URLDetonation"]
+            "File" = $form.Controls["${provider}-FileDetonation"]
+            "Directory" = $form.Controls["${provider}-Directory"]
+            "Intel" = $form.Controls["${provider}-Intel"]
+        }
 
-    foreach ($apiProvider in $apiProviders) {
-        $mainCheckbox = $form.Controls | Where-Object { $_.Name -eq "$apiProvider-mainCheckbox" }
-        $textbox = $form.Controls | Where-Object { $_.Name -eq "$apiProvider-textbox" }
+        foreach ($entry in $scriptTypes.GetEnumerator()) {
+            $type = $entry.Key
+            $checkboxControl = $entry.Value
+            $scriptName = "Integration_${provider}_${type}.py"
+            $inuseScript = Join-Path -Path $inusePath -ChildPath $scriptName
+            $storedScript = Join-Path -Path $storedPath -ChildPath $scriptName
 
-        if ($mainCheckbox.Checked) {
-            $apiKeyValue = $textbox.Text
-
-            # Determine which scripts to move based on checkboxes
-            foreach ($apiType in $apiTypes) {
-                $checkBox = $form.Controls | Where-Object { $_.Name -eq "$apiProvider-$apiType" }
-                if ($checkBox.Checked) {
-                    $scriptName = "Integration_${apiProvider}_${apiType}.py"
-                    $scriptPath = Join-Path $storedPath $scriptName
-                    $destinationPath = Join-Path $inUsePath $scriptName
-
-                    Move-Item $scriptPath $destinationPath -Force
-                    # Replace the API key in the moved script
-                    (Get-Content $destinationPath) -replace '\$apiKey = "redacted"', "`$apiKey = `"$apiKeyValue`"" | Set-Content $destinationPath
+            if ($form.Controls["${provider}-mainCheckbox"].Checked) {
+                if ($checkboxControl.Checked) {
+                    if (-not (Test-Path $inuseScript)) {
+                        # Delete the inuse script if it exists before moving
+                        if (Test-Path $inuseScript) {
+                            Remove-Item -Path $inuseScript -Force
+                        }
+                        Move-Item -Path $storedScript -Destination $inusePath
+                        $apiKey = $form.Controls["${provider}-textbox"].Text
+                        if ($apiKey) {
+                            $scriptContent = Get-Content -Path $inuseScript -Raw
+                            $updatedScriptContent = $scriptContent -replace '\$apiKey\s*=\s*"([^"]+)"', "`$apiKey = `"$apiKey`""
+                            Set-Content -Path $inuseScript -Value $updatedScriptContent
+                        }
+                    }
+                } else {
+                    if (Test-Path $inuseScript) {
+                        # Delete the stored script if it exists before moving
+                        if (Test-Path $storedScript) {
+                            Remove-Item -Path $storedScript -Force
+                        }
+                        Move-Item -Path $inuseScript -Destination $storedPath -Force
+                        Redact-ApiKeyInScript -scriptPath $storedScript
+                    }
+                }
+            } else {
+                if (Test-Path $inuseScript) {
+                    # Delete the stored script if it exists before moving
+                    if (Test-Path $storedScript) {
+                        Remove-Item -Path $storedScript -Force
+                    }
+                    Move-Item -Path $inuseScript -Destination $storedPath -Force
+                    Redact-ApiKeyInScript -scriptPath $storedScript
                 }
             }
         }
     }
+    [System.Windows.Forms.MessageBox]::Show("Scripts updated successfully.")
 })
-
 $form.Controls.Add($executeButton)
 $form.ShowDialog()

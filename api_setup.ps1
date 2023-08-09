@@ -26,10 +26,12 @@ function Get-ApiKeyFromScript {
 # Create form
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'API Credentials'
-$form.Size = New-Object System.Drawing.Size(890, 360)
 $form.StartPosition = 'CenterScreen'
+$form.ForeColor = [System.Drawing.Color]::lightseagreen   
+$form.BackColor = [System.Drawing.Color]::Black
+$Form.FormBorderStyle = 'Fixed3D'
 
-$apiProviders = @('Anomali', 'VMRay', 'VirusTotal', 'PulseDive', 'Joe-Sandbox', 'Manalyzer', 'Opswat', 'Hybrid Analysis', 'Cuckoo')
+$apiProviders = @('Anomali', 'VMRay', 'VirusTotal', 'PulseDive', 'Joe-Sandbox', 'Manalyzer', 'Opswat', 'Hybrid-Analysis', 'Cuckoo')
 $paddingTop = 10
 
 foreach ($apiProvider in $apiProviders) {
@@ -90,6 +92,8 @@ foreach ($apiProvider in $apiProviders) {
     $textbox.Location = New-Object System.Drawing.Point(650, $paddingTop)
     $textbox.Size = New-Object System.Drawing.Size(210,20)
     $textbox.Enabled = $false
+    $textbox.BackColor = [System.Drawing.Color]::Black
+    $textbox.ForeColor = [System.Drawing.Color]::lightseagreen
     $mainCheckbox.Tag = @($checkboxURLDetonation, $checkboxFileDetonation, $checkboxDirectory, $checkboxIntel, $textbox)
 
     $checkboxURLDetonation.Enabled = $false
@@ -132,9 +136,11 @@ foreach ($apiProvider in $apiProviders) {
 }
 
 $executeButton = New-Object System.Windows.Forms.Button
-$executeButton.Location = New-Object System.Drawing.Point(290, 270)
+$executeButton.Location = New-Object System.Drawing.Point(320, $paddingTop)
 $executeButton.Size = New-Object System.Drawing.Size(240, 30)
 $executeButton.Text = "Activate"
+$executeButton.BackColor = [System.Drawing.Color]::DarkCyan
+$executeButton.ForeColor = [System.Drawing.Color]::Black
 $executeButton.Add_Click({
     foreach ($provider in $apiProviders) {
         $scriptTypes = @{
@@ -191,4 +197,6 @@ $executeButton.Add_Click({
     [System.Windows.Forms.MessageBox]::Show("Scripts updated successfully.")
 })
 $form.Controls.Add($executeButton)
+$paddingTopup = $paddingTop + 85
+$form.Size = New-Object System.Drawing.Size(890, $paddingTopup)
 $form.ShowDialog()

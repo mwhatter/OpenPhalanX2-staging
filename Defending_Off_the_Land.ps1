@@ -122,7 +122,7 @@ function Log_Message {
 }
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Defending Off the Land: Aegon Custom Edition"
+$form.Text = "Defending Off the Land"
 $form.Size = New-Object System.Drawing.Size(590, 715)
 $form.StartPosition = "CenterScreen"
 $form.ForeColor = [System.Drawing.Color]::lightseagreen   

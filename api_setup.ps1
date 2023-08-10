@@ -77,8 +77,8 @@ foreach ($apiProvider in $apiProviders) {
     $checkboxDirectory.Enabled = $false
 
     $labelIntel = New-Object System.Windows.Forms.Label
-    $labelIntel.Location = New-Object System.Drawing.Point(570, $paddingTop)
-    $labelIntel.Size = New-Object System.Drawing.Size(50,20)
+    $labelIntel.Location = New-Object System.Drawing.Point(575, $paddingTop)
+    $labelIntel.Size = New-Object System.Drawing.Size(35,20)
     $labelIntel.Text = "Intel?"
 
     $checkboxIntel = New-Object System.Windows.Forms.CheckBox

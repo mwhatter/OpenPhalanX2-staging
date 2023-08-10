@@ -237,10 +237,8 @@ $comboboxlocalFilePath.ForeColor = [System.Drawing.Color]::lightseagreen
 $comboboxlocalFilePath.DrawMode = [System.Windows.Forms.DrawMode]::OwnerDrawFixed
 $comboboxlocalFilePath.add_DrawItem({
     param($senderloc, $e)
-
     $e.DrawBackground()
     $text = $senderloc.Items[$e.Index]
-
     $textFormatFlags = [System.Windows.Forms.TextFormatFlags]::Right
     [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $text, $e.Font, $e.Bounds, $e.ForeColor, $textFormatFlags)
     $e.DrawFocusRectangle()
@@ -284,7 +282,6 @@ $buttonSelectLocalFile.Add_Click({
 })
 $form.Controls.Add($buttonSelectLocalFile)
 
-# Create the JobIdLabel
 $usernameLabel = New-Object System.Windows.Forms.Label
 $usernameLabel.Location = New-Object System.Drawing.Point(53, 275)
 $usernameLabel.Size = New-Object System.Drawing.Size(200, 15)
@@ -298,7 +295,6 @@ $comboboxUsername.BackColor = [System.Drawing.Color]::Black
 $comboboxUsername.ForeColor = [System.Drawing.Color]::lightseagreen
 $form.Controls.Add($comboboxUsername)
 
-# Password change button
 $buttonPWChange = New-Object System.Windows.Forms.Button
 $buttonPWChange.Location = New-Object System.Drawing.Point(15, 310)
 $buttonPWChange.Size = New-Object System.Drawing.Size(55,40)
@@ -308,7 +304,6 @@ $buttonPWChange.Add_Click({
 })
 $form.Controls.Add($buttonPWChange)
 
-# Log off button
 $buttonLogOff = New-Object System.Windows.Forms.Button
 $buttonLogOff.Location = New-Object System.Drawing.Point(70, 310)
 $buttonLogOff.Size = New-Object System.Drawing.Size(55, 40)
@@ -318,7 +313,6 @@ $buttonLogOff.Add_Click({
 })
 $form.Controls.Add($buttonLogOff)
 
-# Disable account button
 $buttonDisableAcc = New-Object System.Windows.Forms.Button
 $buttonDisableAcc.Location = New-Object System.Drawing.Point(125, 310)
 $buttonDisableAcc.Size = New-Object System.Drawing.Size(55, 40)
@@ -328,7 +322,6 @@ $buttonDisableAcc.Add_Click({
 })
 $form.Controls.Add($buttonDisableAcc)
 
-# Enable account button
 $buttonEnableAcc = New-Object System.Windows.Forms.Button
 $buttonEnableAcc.Location = New-Object System.Drawing.Point(180, 310)
 $buttonEnableAcc.Size = New-Object System.Drawing.Size(50, 40)
@@ -337,7 +330,6 @@ $buttonEnableAcc.Add_Click({
     
 })
 $form.Controls.Add($buttonEnableAcc)
-
 
 $buttonSysInfo = New-Object System.Windows.Forms.Button
 $buttonSysInfo.Location = New-Object System.Drawing.Point(315, 20)
@@ -420,7 +412,6 @@ $buttonHuntFile.Add_Click({
 })
 $form.Controls.Add($buttonHuntFile)
 
-
 $buttonPlaceFile = New-Object System.Windows.Forms.Button
 $buttonPlaceFile.Location = New-Object System.Drawing.Point(330, 355)
 $buttonPlaceFile.Size = New-Object System.Drawing.Size(75, 40)
@@ -446,16 +437,9 @@ $executeCommandButton.Size = New-Object System.Drawing.Size(75, 40)
 $executeCommandButton.Add_Click({
     $computerName = if ($comboBoxComputerName.SelectedItem) {
         $comboBoxComputerName.SelectedItem.ToString()
-    } else {
-        $comboBoxComputerName.Text
-    }
-
+    } else {$comboBoxComputerName.Text}
     $command = $textboxaddargs.Text
-
-    # Execute the external script with provided parameters
     $output = & ".\Tools\Scripts\small_dol_oneliner.ps1" -ComputerNameFromMain $computerName -CommandFromMain $command
-
-    # Handle the output in main.ps1 (as small_dol_oneliner.ps1 doesn't have access to your GUI elements)
     $textboxResults.AppendText($output)
     Log_Message -Message $output -LogFilePath $LogFile
 })
@@ -484,9 +468,9 @@ $buttonBoxEmAll.Location = New-Object System.Drawing.Point(85, 355)
 $buttonBoxEmAll.Size = New-Object System.Drawing.Size(75,40)
 $buttonBoxEmAll.Text = "BoxEmAll"
 $buttonBoxEmAll.Add_Click({
-    
+    $output = & ".\Tools\Scripts\box_em_all.ps1"
+    $textboxResults.AppendText($output)
 })
-
 $form.Controls.Add($buttonBoxEmAll)
 
 $labelTractorBeam = New-Object System.Windows.Forms.Label
@@ -507,7 +491,8 @@ $buttonSubmitUrl.Location = New-Object System.Drawing.Point(90, 225)
 $buttonSubmitUrl.Size = New-Object System.Drawing.Size(70, 40)
 $buttonSubmitUrl.Text = "Sandbox URL"
 $buttonSubmitUrl.Add_Click({
-    
+    $TextBoxUrlt = $TextBoxUrl.Text
+    .\Tools\Scripts\small_dol_submiturl.ps1 -UrlFromMain $TextBoxUrlt
 })
 $Form.Controls.Add($buttonSubmitUrl)
 
@@ -526,7 +511,8 @@ $buttonGetIntel.Location = New-Object System.Drawing.Point(15, 225)
 $buttonGetIntel.Size = New-Object System.Drawing.Size(75, 40)
 $buttonGetIntel.Text = "Get Intel"
 $buttonGetIntel.Add_Click({
-    
+    $indicator = $TextBoxUrl.Text
+    .\Tools\Scripts\small_dol_getintel.ps1 -IndicatorFromMain $indicator
 })
 $Form.Controls.Add($buttonGetIntel)
 
@@ -546,7 +532,6 @@ $buttonProcAsso.Text = "ProcAsso"
 $buttonProcAsso.Add_Click({
     
 })
-
 $form.Controls.Add($buttonProcAsso)
 
 $submitfileButton = New-Object System.Windows.Forms.Button
@@ -554,10 +539,12 @@ $submitfileButton.Location = New-Object System.Drawing.Point(405, 270)
 $submitfileButton.Size = New-Object System.Drawing.Size(75, 40)
 $submitfileButton.Text = "Sandbox Local File"
 $submitfileButton.Add_Click({
-    
-})     
+    $sampleFile = if ($comboboxlocalFilePath.SelectedItem) {
+        $comboboxlocalFilePath.SelectedItem.ToString()
+    } else {$comboboxlocalFilePath.Text}
+    .\Tools\Scripts\small_dol_sandboxfile.ps1 -SampleFileFromMain $sampleFile
+})
 $form.Controls.Add($submitfileButton)
-
 
 $buttonRetrieveReportfile = New-Object System.Windows.Forms.Button
 $buttonRetrieveReportfile.Location = New-Object System.Drawing.Point(480, 270)
@@ -596,10 +583,7 @@ $helpButton.Add_Click({
 })
 $form.Controls.Add($helpButton)
 
-# Create a ToolTip object
 $tooltip = New-Object System.Windows.Forms.ToolTip
-
-# Set the tooltip for each button
 $tooltip.SetToolTip($buttonViewProcesses, "Click to view the list of running processes on the selected remote computer. `r`n This button populates the Select a Process dropdown")
 $tooltip.SetToolTip($buttonCopyBinaries, "Click to copy all uniquely pathed modules currently running on the remote computer.")
 $tooltip.SetToolTip($buttonIsolateHost, "Click to isolate the remote computer by blocking all IP addresses except the local host.")

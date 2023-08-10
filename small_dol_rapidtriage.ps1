@@ -185,7 +185,7 @@ function Get_PrefetchMetadata {
 
     $driveLetters = Get_RemoteDriveLetters -HostName $HostName
 
-    $ExcelFile = Join-Path $exportPath\$HostName\RapidTriage "RapidTriage.xlsx"
+    $ExcelFile = Join-Path $exportPath\$HostName\RapidTriage "$HostName-RapidTriage.xlsx"
     
     $copiedFilesPath = ".\CopiedFiles\$HostName\Prefetch"
     New-Item -Path $copiedFilesPath -ItemType Directory -Force
@@ -212,17 +212,15 @@ function Get_PrefetchMetadata {
     $csvFiles = Get-ChildItem -Path $csvOutputDir -Filter "*.csv" -File
     foreach ($csvFile in $csvFiles) {
         $csvData = Import-Csv -Path $csvFile.FullName
-        $csvData | Export-Excel -Path $ExcelFile -WorksheetName $csvFile.BaseName -AutoSize -AutoFilter -FreezeFirstColumn -BoldTopRow -TableName "$($csvFile.BaseName)Table"
+        $csvData | Export-Excel -Path $ExcelFile -WorksheetName $csvFile.BaseName -AutoSize -AutoFilter -FreezeFirstColumn -BoldTopRow -FreezeTopRow -TableStyle Medium6
     }
 
-    Remove-Item -Path $csvOutputDir -Force
+    Remove-Item -Path $csvOutputDir -Force -Recurse
     $colprestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "Collected Prefetch from $HostName at $colprestart" -ForegroundColor Cyan 
     Log_Message -logfile $logfile -Message "Collected Prefetch from $HostName"
     $textboxResults.AppendText("Collected Prefetch from $HostName at $colprestart `r`n")
 }
-
-
 function Copy_BrowserHistoryFiles {
     param (
         [string]$RemoteHost,

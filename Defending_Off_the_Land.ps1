@@ -142,14 +142,49 @@ $textboxResults.ForeColor = [System.Drawing.Color]::lightseagreen
 $form.Controls.Add($textboxResults)
 
 $ScriptStartTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-Log_Message -Message "Session started at $ScriptStartTime" -LogFilePath $LogFile
+Log_Message -Message "Session started at $ScriptStartTime" -LogFile $LogFile
 $textboxResults.AppendText("Session started at $ScriptStartTime `r`n")
 
-$labelComputerName = New-Object System.Windows.Forms.Label
-$labelComputerName.Location = New-Object System.Drawing.Point(53, 32)
-$labelComputerName.Size = New-Object System.Drawing.Size(95, 20)
-$labelComputerName.Text = "Remote Computer"
-$form.Controls.Add($labelComputerName)
+$helpButton = New-Object System.Windows.Forms.Button
+$helpButton.Location = New-Object System.Drawing.Point(15, 20) 
+$helpButton.Size = New-Object System.Drawing.Size(30, 20) 
+$helpButton.Text = "?"
+$helpButton.Add_Click({
+    & ".\Tools\Scripts\small_dol_help.ps1"
+})
+$form.Controls.Add($helpButton)
+
+$buttonSysInfo = New-Object System.Windows.Forms.Button
+$buttonSysInfo.Location = New-Object System.Drawing.Point(315, 20)
+$buttonSysInfo.Size = New-Object System.Drawing.Size(80, 40)
+$buttonSysInfo.Text = "Recon"
+$buttonSysInfo.Add_Click({
+    $computerName = if ($comboBoxComputerName.SelectedItem) {
+        $comboBoxComputerName.SelectedItem.ToString()
+    } else {$comboBoxComputerName.Text}
+    if (![string]::IsNullOrEmpty($computerName)) {
+        & ".\Tools\Scripts\small_dol_recon.ps1" -computerName $computerName -textboxResults $textboxResults -comboboxUsername $comboboxUsername
+    }
+})
+$form.Controls.Add($buttonSysInfo)
+
+$buttonViewProcesses = New-Object System.Windows.Forms.Button
+$buttonViewProcesses.Location = New-Object System.Drawing.Point(395, 20)
+$buttonViewProcesses.Size = New-Object System.Drawing.Size(80, 40)
+$buttonViewProcesses.Text = "View Processes"
+$buttonViewProcesses.Add_Click({
+    
+})
+$form.Controls.Add($buttonViewProcesses)
+
+$buttonRestart = New-Object System.Windows.Forms.Button
+$buttonRestart.Location = New-Object System.Drawing.Point(475, 20)
+$buttonRestart.Size = New-Object System.Drawing.Size(80, 40)
+$buttonRestart.Text = "Restart Host"
+$buttonRestart.Add_Click({
+    
+})
+$form.Controls.Add($buttonRestart)
 
 $comboboxComputerName = New-Object System.Windows.Forms.ComboBox
 $comboboxComputerName.Location = New-Object System.Drawing.Point(150, 30)
@@ -160,15 +195,62 @@ $comboBoxComputerName.AutoCompleteMode = 'Suggest'
 $comboBoxComputerName.AutoCompleteSource = 'ListItems'
 $form.Controls.Add($comboboxComputerName)
 
+$labelComputerName = New-Object System.Windows.Forms.Label
+$labelComputerName.Location = New-Object System.Drawing.Point(53, 32)
+$labelComputerName.Size = New-Object System.Drawing.Size(95, 20)
+$labelComputerName.Text = "Remote Computer"
+$form.Controls.Add($labelComputerName)
 
 $buttonGetHostList = New-Object System.Windows.Forms.Button
 $buttonGetHostList.Text = 'Get Host List'
 $buttonGetHostList.Location = New-Object System.Drawing.Point(53, 50)
 $buttonGetHostList.Size = New-Object System.Drawing.Size(90, 23)
 $buttonGetHostList.Add_Click({
-    
+    $comboBoxComputerName.Items.Clear()
+    $script:allComputers = & ".\Tools\Scripts\small_dol_gethost.ps1"
+    $comboBoxComputerName.Items.AddRange($script:allComputers)
 })
 $Form.Controls.Add($buttonGetHostList)
+
+$buttonKillProcess = New-Object System.Windows.Forms.Button
+$buttonKillProcess.Location = New-Object System.Drawing.Point(315, 60)
+$buttonKillProcess.Size = New-Object System.Drawing.Size(80, 40)
+$buttonKillProcess.Text = "Kill Process"
+$buttonKillProcess.Add_Click({
+    
+})
+$form.Controls.Add($buttonKillProcess)
+
+$buttonCopyBinaries = New-Object System.Windows.Forms.Button
+$buttonCopyBinaries.Location = New-Object System.Drawing.Point(395, 60)
+$buttonCopyBinaries.Size = New-Object System.Drawing.Size(80, 40)
+$buttonCopyBinaries.Text = "Copy All Modules"
+$buttonCopyBinaries.Add_Click({
+    
+})
+$form.Controls.Add($buttonCopyBinaries)
+
+$buttonShutdown = New-Object System.Windows.Forms.Button
+$buttonShutdown.Location = New-Object System.Drawing.Point(475, 60)
+$buttonShutdown.Size = New-Object System.Drawing.Size(80, 40)
+$buttonShutdown.Text = "Shutdown Host"
+$buttonShutdown.Add_Click({
+    
+})
+$form.Controls.Add($buttonShutdown)
+
+$dropdownProcessId = New-Object System.Windows.Forms.ComboBox
+$dropdownProcessId.Location = New-Object System.Drawing.Point(150, 85)
+$dropdownProcessId.Size = New-Object System.Drawing.Size(150, 20)
+$dropdownProcessId.BackColor = [System.Drawing.Color]::Black
+$dropdownProcessId.ForeColor = [System.Drawing.Color]::lightseagreen
+$form.Controls.Add($dropdownProcessId)
+
+$labelProcessId = New-Object System.Windows.Forms.Label
+$labelProcessId.Location = New-Object System.Drawing.Point(53, 87)
+$labelProcessId.Size = New-Object System.Drawing.Size(95, 20)
+$labelProcessId.Text = "Select a Process"
+$form.Controls.Add($labelProcessId)
 
 $RapidTriageButton = New-Object System.Windows.Forms.Button
 $RapidTriageButton.Location = New-Object System.Drawing.Point(315, 100)
@@ -188,27 +270,47 @@ $WinEventalyzerButton.Add_Click({
 })
 $form.Controls.Add($WinEventalyzerButton)
 
-$UsnJrnlButton = New-Object System.Windows.Forms.Button
-$UsnJrnlButton.Location = New-Object System.Drawing.Point(15, 355)
-$UsnJrnlButton.Size = New-Object System.Drawing.Size(70, 40)
-$UsnJrnlButton.Text = 'USN Jrnl Collection'
-$UsnJrnlButton.Add_Click({
+$buttonProcAsso = New-Object System.Windows.Forms.Button
+$buttonProcAsso.Location = New-Object System.Drawing.Point(475, 100)
+$buttonProcAsso.Size = New-Object System.Drawing.Size(80,40)
+$buttonProcAsso.Text = "ProcAsso"
+$buttonProcAsso.Add_Click({
     
 })
-$form.Controls.Add($UsnJrnlButton)
+$form.Controls.Add($buttonProcAsso)
 
-$labelProcessId = New-Object System.Windows.Forms.Label
-$labelProcessId.Location = New-Object System.Drawing.Point(53, 87)
-$labelProcessId.Size = New-Object System.Drawing.Size(95, 20)
-$labelProcessId.Text = "Select a Process"
-$form.Controls.Add($labelProcessId)
+$labelTractorBeam = New-Object System.Windows.Forms.Label
+$labelTractorBeam.Location = New-Object System.Drawing.Point(53, 120)
+$labelTractorBeam.Size = New-Object System.Drawing.Size(100, 20)
+$labelTractorBeam.Text = "Tractor Beam"
+$form.Controls.Add($labelTractorBeam)
 
-$dropdownProcessId = New-Object System.Windows.Forms.ComboBox
-$dropdownProcessId.Location = New-Object System.Drawing.Point(150, 85)
-$dropdownProcessId.Size = New-Object System.Drawing.Size(150, 20)
-$dropdownProcessId.BackColor = [System.Drawing.Color]::Black
-$dropdownProcessId.ForeColor = [System.Drawing.Color]::lightseagreen
-$form.Controls.Add($dropdownProcessId)
+$buttonIsolateHost = New-Object System.Windows.Forms.Button
+$buttonIsolateHost.Location = New-Object System.Drawing.Point(15, 140)
+$buttonIsolateHost.Size = New-Object System.Drawing.Size(70, 40)
+$buttonIsolateHost.Text = "Engage"
+$buttonIsolateHost.Add_Click({
+    
+})
+$form.Controls.Add($buttonIsolateHost)
+
+$buttonUndoIsolation = New-Object System.Windows.Forms.Button
+$buttonUndoIsolation.Location = New-Object System.Drawing.Point(85, 140)
+$buttonUndoIsolation.Size = New-Object System.Drawing.Size(70, 40)
+$buttonUndoIsolation.Text = "Release"
+$buttonUndoIsolation.Add_Click({
+    
+})
+$form.Controls.Add($buttonUndoIsolation)
+
+$buttonInstallSysmon = New-Object System.Windows.Forms.Button
+$buttonInstallSysmon.Location = New-Object System.Drawing.Point(160, 140)
+$buttonInstallSysmon.Size = New-Object System.Drawing.Size(70, 40)
+$buttonInstallSysmon.Text = "Deploy Sysmon"
+$buttonInstallSysmon.Add_Click({
+    
+})
+$form.Controls.Add($buttonInstallSysmon)
 
 $labelRemoteFilePath = New-Object System.Windows.Forms.Label
 $labelRemoteFilePath.Location = New-Object System.Drawing.Point(260, 142)
@@ -222,6 +324,85 @@ $textboxremoteFilePath.Size = New-Object System.Drawing.Size(245, 20)
 $textboxremoteFilePath.BackColor = [System.Drawing.Color]::Black
 $textboxremoteFilePath.ForeColor = [System.Drawing.Color]::lightseagreen
 $form.Controls.Add($textboxremoteFilePath)
+
+$buttonSelectRemoteFile = New-Object System.Windows.Forms.Button
+$buttonSelectRemoteFile.Text = "Browse Remote Files"
+$buttonSelectRemoteFile.Size = New-Object System.Drawing.Size(80, 40)
+$buttonSelectRemoteFile.Location = New-Object System.Drawing.Point(245, 180)
+$buttonSelectRemoteFile.Add_Click({
+        
+})
+$form.Controls.Add($buttonSelectRemoteFile)
+
+$buttonCopyFile = New-Object System.Windows.Forms.Button
+$buttonCopyFile.Location = New-Object System.Drawing.Point(330, 180)
+$buttonCopyFile.Size = New-Object System.Drawing.Size(75, 40)
+$buttonCopyFile.Text = "Copy"
+$buttonCopyFile.Add_Click({
+    
+})
+$form.Controls.Add($buttonCopyFile)
+
+$buttonHuntFile = New-Object System.Windows.Forms.Button
+$buttonHuntFile.Location = New-Object System.Drawing.Point(405, 180)
+$buttonHuntFile.Size = New-Object System.Drawing.Size(75, 40)
+$buttonHuntFile.Text = "Hunt File"
+$buttonHuntFile.Add_Click({
+    
+})
+$form.Controls.Add($buttonHuntFile)
+
+$buttonDeleteFile = New-Object System.Windows.Forms.Button
+$buttonDeleteFile.Location = New-Object System.Drawing.Point(480, 180)
+$buttonDeleteFile.Size = New-Object System.Drawing.Size(75, 40)
+$buttonDeleteFile.Text = "Delete"
+$buttonDeleteFile.Add_Click({
+    
+})
+$form.Controls.Add($buttonDeleteFile)
+
+$JobIdLabel = New-Object System.Windows.Forms.Label
+$JobIdLabel.Location = New-Object System.Drawing.Point(53, 187)
+$JobIdLabel.Size = New-Object System.Drawing.Size(200, 18)
+$JobIdLabel.Text = "Enter URL, IP, or Hash"
+$form.Controls.Add($JobIdLabel)
+
+$textboxURL = New-Object System.Windows.Forms.TextBox
+$textboxURL.Location = New-Object System.Drawing.Point(15, 205)
+$textboxURL.Size = New-Object System.Drawing.Size(215, 20)
+$textboxURL.BackColor = [System.Drawing.Color]::Black
+$textboxURL.ForeColor = [System.Drawing.Color]::lightseagreen
+$form.Controls.Add($textboxURL)
+
+$buttonGetIntel = New-Object System.Windows.Forms.Button
+$buttonGetIntel.Location = New-Object System.Drawing.Point(15, 225)
+$buttonGetIntel.Size = New-Object System.Drawing.Size(75, 40)
+$buttonGetIntel.Text = "Get Intel"
+$buttonGetIntel.Add_Click({
+    $indicator = $TextBoxUrl.Text
+    .\Tools\Scripts\small_dol_getintel.ps1 -IndicatorFromMain $indicator
+})
+$Form.Controls.Add($buttonGetIntel)
+
+$buttonSubmitUrl = New-Object System.Windows.Forms.Button
+$buttonSubmitUrl.Location = New-Object System.Drawing.Point(90, 225)
+$buttonSubmitUrl.Size = New-Object System.Drawing.Size(70, 40)
+$buttonSubmitUrl.Text = "Sandbox URL"
+$buttonSubmitUrl.Add_Click({
+    $TextBoxUrlt = $TextBoxUrl.Text
+    .\Tools\Scripts\small_dol_submiturl.ps1 -UrlFromMain $TextBoxUrlt
+})
+$Form.Controls.Add($buttonSubmitUrl)
+
+$buttonRetrieveReport = New-Object System.Windows.Forms.Button
+$buttonRetrieveReport.Location = New-Object System.Drawing.Point(160, 225)
+$buttonRetrieveReport.Size = New-Object System.Drawing.Size(70, 40)
+$buttonRetrieveReport.Text = "Retrieve Report"
+$buttonRetrieveReport.Enabled = $false
+$buttonRetrieveReport.Add_Click({
+    
+})
+$form.Controls.Add($buttonRetrieveReport)
 
 $labelLocalFilePath = New-Object System.Windows.Forms.Label
 $labelLocalFilePath.Location = New-Object System.Drawing.Point(258, 230)
@@ -245,28 +426,6 @@ $comboboxlocalFilePath.add_DrawItem({
 })
 $form.Controls.Add($comboboxlocalFilePath)
 
-$labeladdargs = New-Object System.Windows.Forms.Label
-$labeladdargs.Location = New-Object System.Drawing.Point(250, 328)
-$labeladdargs.Size = New-Object System.Drawing.Size(60, 20)
-$labeladdargs.Text = "Arguments"
-$form.Controls.Add($labeladdargs)
-
-$textboxaddargs = New-Object System.Windows.Forms.TextBox
-$textboxaddargs.Location = New-Object System.Drawing.Point(310, 325)
-$textboxaddargs.Size = New-Object System.Drawing.Size(245, 20)
-$textboxaddargs.BackColor = [System.Drawing.Color]::Black
-$textboxaddargs.ForeColor = [System.Drawing.Color]::lightseagreen
-$form.Controls.Add($textboxaddargs)
-
-$buttonSelectRemoteFile = New-Object System.Windows.Forms.Button
-$buttonSelectRemoteFile.Text = "Browse Remote Files"
-$buttonSelectRemoteFile.Size = New-Object System.Drawing.Size(80, 40)
-$buttonSelectRemoteFile.Location = New-Object System.Drawing.Point(245, 180)
-$buttonSelectRemoteFile.Add_Click({
-        
-})
-$form.Controls.Add($buttonSelectRemoteFile)
-
 $buttonSelectLocalFile = New-Object System.Windows.Forms.Button
 $buttonSelectLocalFile.Text = "Browse Local Files"
 $buttonSelectLocalFile.Size = New-Object System.Drawing.Size(80, 40)
@@ -281,6 +440,37 @@ $buttonSelectLocalFile.Add_Click({
     }
 })
 $form.Controls.Add($buttonSelectLocalFile)
+
+$buttonListCopiedFiles = New-Object System.Windows.Forms.Button
+$buttonListCopiedFiles.Location = New-Object System.Drawing.Point(330, 270)
+$buttonListCopiedFiles.Size = New-Object System.Drawing.Size(75, 40)
+$buttonListCopiedFiles.Text = "View Copied Files"
+$buttonListCopiedFiles.Add_Click({
+    
+})
+$form.Controls.Add($buttonListCopiedFiles)
+
+$submitfileButton = New-Object System.Windows.Forms.Button
+$submitfileButton.Location = New-Object System.Drawing.Point(405, 270)
+$submitfileButton.Size = New-Object System.Drawing.Size(75, 40)
+$submitfileButton.Text = "Sandbox Local File"
+$submitfileButton.Add_Click({
+    $sampleFile = if ($comboboxlocalFilePath.SelectedItem) {
+        $comboboxlocalFilePath.SelectedItem.ToString()
+    } else {$comboboxlocalFilePath.Text}
+    .\Tools\Scripts\small_dol_sandboxfile.ps1 -SampleFileFromMain $sampleFile
+})
+$form.Controls.Add($submitfileButton)
+
+$buttonRetrieveReportfile = New-Object System.Windows.Forms.Button
+$buttonRetrieveReportfile.Location = New-Object System.Drawing.Point(480, 270)
+$buttonRetrieveReportfile.Size = New-Object System.Drawing.Size(75, 40)
+$buttonRetrieveReportfile.Text = "Retrieve Report"
+$buttonRetrieveReportfile.Enabled = $false
+$buttonRetrieveReportfile.Add_Click({
+    
+})
+$form.Controls.Add($buttonRetrieveReportfile)
 
 $usernameLabel = New-Object System.Windows.Forms.Label
 $usernameLabel.Location = New-Object System.Drawing.Point(53, 275)
@@ -331,86 +521,46 @@ $buttonEnableAcc.Add_Click({
 })
 $form.Controls.Add($buttonEnableAcc)
 
-$buttonSysInfo = New-Object System.Windows.Forms.Button
-$buttonSysInfo.Location = New-Object System.Drawing.Point(315, 20)
-$buttonSysInfo.Size = New-Object System.Drawing.Size(80, 40)
-$buttonSysInfo.Text = "Recon"
-$buttonSysInfo.Add_Click({
-    
-})
-$form.Controls.Add($buttonSysInfo)
+$textboxaddargs = New-Object System.Windows.Forms.TextBox
+$textboxaddargs.Location = New-Object System.Drawing.Point(310, 325)
+$textboxaddargs.Size = New-Object System.Drawing.Size(245, 20)
+$textboxaddargs.BackColor = [System.Drawing.Color]::Black
+$textboxaddargs.ForeColor = [System.Drawing.Color]::lightseagreen
+$form.Controls.Add($textboxaddargs)
 
-$buttonViewProcesses = New-Object System.Windows.Forms.Button
-$buttonViewProcesses.Location = New-Object System.Drawing.Point(395, 20)
-$buttonViewProcesses.Size = New-Object System.Drawing.Size(80, 40)
-$buttonViewProcesses.Text = "View Processes"
-$buttonViewProcesses.Add_Click({
-    
-})
-$form.Controls.Add($buttonViewProcesses)
+$labeladdargs = New-Object System.Windows.Forms.Label
+$labeladdargs.Location = New-Object System.Drawing.Point(250, 328)
+$labeladdargs.Size = New-Object System.Drawing.Size(60, 20)
+$labeladdargs.Text = "Arguments"
+$form.Controls.Add($labeladdargs)
 
-$buttonRestart = New-Object System.Windows.Forms.Button
-$buttonRestart.Location = New-Object System.Drawing.Point(475, 20)
-$buttonRestart.Size = New-Object System.Drawing.Size(80, 40)
-$buttonRestart.Text = "Restart Host"
-$buttonRestart.Add_Click({
+$UsnJrnlButton = New-Object System.Windows.Forms.Button
+$UsnJrnlButton.Location = New-Object System.Drawing.Point(15, 355)
+$UsnJrnlButton.Size = New-Object System.Drawing.Size(70, 40)
+$UsnJrnlButton.Text = 'USN Jrnl Collection'
+$UsnJrnlButton.Add_Click({
     
 })
-$form.Controls.Add($buttonRestart)
+$form.Controls.Add($UsnJrnlButton)
 
-$buttonKillProcess = New-Object System.Windows.Forms.Button
-$buttonKillProcess.Location = New-Object System.Drawing.Point(315, 60)
-$buttonKillProcess.Size = New-Object System.Drawing.Size(80, 40)
-$buttonKillProcess.Text = "Kill Process"
-$buttonKillProcess.Add_Click({
-    
+$buttonBoxEmAll = New-Object System.Windows.Forms.Button
+$buttonBoxEmAll.Location = New-Object System.Drawing.Point(85, 355)
+$buttonBoxEmAll.Size = New-Object System.Drawing.Size(75,40)
+$buttonBoxEmAll.Text = "BoxEmAll"
+$buttonBoxEmAll.Add_Click({
+    $output = & ".\Tools\Scripts\box_em_all.ps1"
+    $textboxResults.AppendText($output)
 })
-$form.Controls.Add($buttonKillProcess)
+$form.Controls.Add($buttonBoxEmAll)
 
-$buttonCopyBinaries = New-Object System.Windows.Forms.Button
-$buttonCopyBinaries.Location = New-Object System.Drawing.Point(395, 60)
-$buttonCopyBinaries.Size = New-Object System.Drawing.Size(80, 40)
-$buttonCopyBinaries.Text = "Copy All Modules"
-$buttonCopyBinaries.Add_Click({
+$buttonIntelligizer = New-Object System.Windows.Forms.Button
+$buttonIntelligizer.Location = New-Object System.Drawing.Point(160, 355)
+$buttonIntelligizer.Size = New-Object System.Drawing.Size(70,40)
+$buttonIntelligizer.Text = "Intelligazer"
+$buttonIntelligizer.Add_Click({
     
 })
-$form.Controls.Add($buttonCopyBinaries)
-
-$buttonShutdown = New-Object System.Windows.Forms.Button
-$buttonShutdown.Location = New-Object System.Drawing.Point(475, 60)
-$buttonShutdown.Size = New-Object System.Drawing.Size(80, 40)
-$buttonShutdown.Text = "Shutdown Host"
-$buttonShutdown.Add_Click({
-    
-})
-$form.Controls.Add($buttonShutdown)
-
-$buttonCopyFile = New-Object System.Windows.Forms.Button
-$buttonCopyFile.Location = New-Object System.Drawing.Point(330, 180)
-$buttonCopyFile.Size = New-Object System.Drawing.Size(75, 40)
-$buttonCopyFile.Text = "Copy"
-$buttonCopyFile.Add_Click({
-    
-})
-$form.Controls.Add($buttonCopyFile)
-
-$buttonDeleteFile = New-Object System.Windows.Forms.Button
-$buttonDeleteFile.Location = New-Object System.Drawing.Point(480, 180)
-$buttonDeleteFile.Size = New-Object System.Drawing.Size(75, 40)
-$buttonDeleteFile.Text = "Delete"
-$buttonDeleteFile.Add_Click({
-    
-})
-$form.Controls.Add($buttonDeleteFile)
-
-$buttonHuntFile = New-Object System.Windows.Forms.Button
-$buttonHuntFile.Location = New-Object System.Drawing.Point(405, 180)
-$buttonHuntFile.Size = New-Object System.Drawing.Size(75, 40)
-$buttonHuntFile.Text = "Hunt File"
-$buttonHuntFile.Add_Click({
-    
-})
-$form.Controls.Add($buttonHuntFile)
+$form.Controls.Add($buttonIntelligizer)
 
 $buttonPlaceFile = New-Object System.Windows.Forms.Button
 $buttonPlaceFile.Location = New-Object System.Drawing.Point(330, 355)
@@ -445,126 +595,6 @@ $executeCommandButton.Add_Click({
 })
 $form.Controls.Add($executeCommandButton)
 
-$buttonInstallSysmon = New-Object System.Windows.Forms.Button
-$buttonInstallSysmon.Location = New-Object System.Drawing.Point(160, 140)
-$buttonInstallSysmon.Size = New-Object System.Drawing.Size(70, 40)
-$buttonInstallSysmon.Text = "Deploy Sysmon"
-$buttonInstallSysmon.Add_Click({
-    
-})
-$form.Controls.Add($buttonInstallSysmon)
-
-$buttonIntelligizer = New-Object System.Windows.Forms.Button
-$buttonIntelligizer.Location = New-Object System.Drawing.Point(160, 355)
-$buttonIntelligizer.Size = New-Object System.Drawing.Size(70,40)
-$buttonIntelligizer.Text = "Intelligazer"
-$buttonIntelligizer.Add_Click({
-    
-})
-$form.Controls.Add($buttonIntelligizer)
-
-$buttonBoxEmAll = New-Object System.Windows.Forms.Button
-$buttonBoxEmAll.Location = New-Object System.Drawing.Point(85, 355)
-$buttonBoxEmAll.Size = New-Object System.Drawing.Size(75,40)
-$buttonBoxEmAll.Text = "BoxEmAll"
-$buttonBoxEmAll.Add_Click({
-    $output = & ".\Tools\Scripts\box_em_all.ps1"
-    $textboxResults.AppendText($output)
-})
-$form.Controls.Add($buttonBoxEmAll)
-
-$labelTractorBeam = New-Object System.Windows.Forms.Label
-$labelTractorBeam.Location = New-Object System.Drawing.Point(53, 120)
-$labelTractorBeam.Size = New-Object System.Drawing.Size(100, 20)
-$labelTractorBeam.Text = "Tractor Beam"
-$form.Controls.Add($labelTractorBeam)
-
-$textboxURL = New-Object System.Windows.Forms.TextBox
-$textboxURL.Location = New-Object System.Drawing.Point(15, 205)
-$textboxURL.Size = New-Object System.Drawing.Size(215, 20)
-$textboxURL.BackColor = [System.Drawing.Color]::Black
-$textboxURL.ForeColor = [System.Drawing.Color]::lightseagreen
-$form.Controls.Add($textboxURL)
-
-$buttonSubmitUrl = New-Object System.Windows.Forms.Button
-$buttonSubmitUrl.Location = New-Object System.Drawing.Point(90, 225)
-$buttonSubmitUrl.Size = New-Object System.Drawing.Size(70, 40)
-$buttonSubmitUrl.Text = "Sandbox URL"
-$buttonSubmitUrl.Add_Click({
-    $TextBoxUrlt = $TextBoxUrl.Text
-    .\Tools\Scripts\small_dol_submiturl.ps1 -UrlFromMain $TextBoxUrlt
-})
-$Form.Controls.Add($buttonSubmitUrl)
-
-$buttonRetrieveReport = New-Object System.Windows.Forms.Button
-$buttonRetrieveReport.Location = New-Object System.Drawing.Point(160, 225)
-$buttonRetrieveReport.Size = New-Object System.Drawing.Size(70, 40)
-$buttonRetrieveReport.Text = "Retrieve Report"
-$buttonRetrieveReport.Enabled = $false
-$buttonRetrieveReport.Add_Click({
-    
-})
-$form.Controls.Add($buttonIsolateHost)
-
-$buttonGetIntel = New-Object System.Windows.Forms.Button
-$buttonGetIntel.Location = New-Object System.Drawing.Point(15, 225)
-$buttonGetIntel.Size = New-Object System.Drawing.Size(75, 40)
-$buttonGetIntel.Text = "Get Intel"
-$buttonGetIntel.Add_Click({
-    $indicator = $TextBoxUrl.Text
-    .\Tools\Scripts\small_dol_getintel.ps1 -IndicatorFromMain $indicator
-})
-$Form.Controls.Add($buttonGetIntel)
-
-$buttonUndoIsolation = New-Object System.Windows.Forms.Button
-$buttonUndoIsolation.Location = New-Object System.Drawing.Point(85, 140)
-$buttonUndoIsolation.Size = New-Object System.Drawing.Size(70, 40)
-$buttonUndoIsolation.Text = "Release"
-$buttonUndoIsolation.Add_Click({
-    
-})
-$form.Controls.Add($buttonUndoIsolation)
-
-$buttonProcAsso = New-Object System.Windows.Forms.Button
-$buttonProcAsso.Location = New-Object System.Drawing.Point(475, 100)
-$buttonProcAsso.Size = New-Object System.Drawing.Size(80,40)
-$buttonProcAsso.Text = "ProcAsso"
-$buttonProcAsso.Add_Click({
-    
-})
-$form.Controls.Add($buttonProcAsso)
-
-$submitfileButton = New-Object System.Windows.Forms.Button
-$submitfileButton.Location = New-Object System.Drawing.Point(405, 270)
-$submitfileButton.Size = New-Object System.Drawing.Size(75, 40)
-$submitfileButton.Text = "Sandbox Local File"
-$submitfileButton.Add_Click({
-    $sampleFile = if ($comboboxlocalFilePath.SelectedItem) {
-        $comboboxlocalFilePath.SelectedItem.ToString()
-    } else {$comboboxlocalFilePath.Text}
-    .\Tools\Scripts\small_dol_sandboxfile.ps1 -SampleFileFromMain $sampleFile
-})
-$form.Controls.Add($submitfileButton)
-
-$buttonRetrieveReportfile = New-Object System.Windows.Forms.Button
-$buttonRetrieveReportfile.Location = New-Object System.Drawing.Point(480, 270)
-$buttonRetrieveReportfile.Size = New-Object System.Drawing.Size(75, 40)
-$buttonRetrieveReportfile.Text = "Retrieve Report"
-$buttonRetrieveReportfile.Enabled = $false
-$buttonRetrieveReportfile.Add_Click({
-    
-})
-$form.Controls.Add($buttonRetrieveReportfile)
-
-$buttonListCopiedFiles = New-Object System.Windows.Forms.Button
-$buttonListCopiedFiles.Location = New-Object System.Drawing.Point(330, 270)
-$buttonListCopiedFiles.Size = New-Object System.Drawing.Size(75, 40)
-$buttonListCopiedFiles.Text = "View Copied Files"
-$buttonListCopiedFiles.Add_Click({
-    
-})
-$form.Controls.Add($buttonListCopiedFiles)
-
 $buttonReset = New-Object System.Windows.Forms.Button
 $buttonReset.Location = New-Object System.Drawing.Point(245, 370)
 $buttonReset.Size = New-Object System.Drawing.Size(80, 23)
@@ -573,15 +603,6 @@ $buttonReset.Add_Click({
 
 })
 $form.Controls.Add($buttonReset)
-
-$helpButton = New-Object System.Windows.Forms.Button
-$helpButton.Location = New-Object System.Drawing.Point(15, 20) 
-$helpButton.Size = New-Object System.Drawing.Size(30, 20) 
-$helpButton.Text = "?"
-$helpButton.Add_Click({
-    
-})
-$form.Controls.Add($helpButton)
 
 $tooltip = New-Object System.Windows.Forms.ToolTip
 $tooltip.SetToolTip($buttonViewProcesses, "Click to view the list of running processes on the selected remote computer. `r`n This button populates the Select a Process dropdown")
@@ -626,7 +647,7 @@ $tooltip.SetToolTip($buttonUndoIsolation, "Click to remove firewall rules applie
 
 $Form.Add_FormClosing({
     $ScriptEndTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Log_Message -Message "Your session ended at $ScriptEndTime" -LogFilePath $LogFile
+    Log_Message -Message "Your session ended at $ScriptEndTime" -LogFile $LogFile
     $textboxResults.AppendText("Your session ended at $ScriptEndTime")
 })
 $result = $Form.ShowDialog()

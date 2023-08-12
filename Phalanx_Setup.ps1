@@ -114,7 +114,6 @@ try {
     $downloadError = $_
 }
 
-
 ################## Get the latest Hayabusa release page ##################
 $hayabusaApiUrl = "https://api.github.com/repos/Yamato-Security/hayabusa/releases/latest"
 $hayabusaReleaseData = Invoke-RestMethod -Uri $hayabusaApiUrl
@@ -163,7 +162,6 @@ try {
     Write-Host "Hayabusa rules update failed:`n$_"
 }
 
-
 ################## Download and unzip Sysmon ##################
 $sysmonUrl = "https://download.sysinternals.com/files/Sysmon.zip"
 $sysmonconfigurl = "https://raw.githubusercontent.com/olafhartong/sysmon-modular/master/sysmonconfig.xml"
@@ -183,7 +181,6 @@ try {
     Write-Host "Sysmon and sysmonconfig download and unzip failed:`n$_"
     $downloadError = $_
 }
-
 
 ################## Download and execute Get-ZimmermanTools to retrieve Eric Zimmerman's toolset ##################
 $zimmermanToolsZip = Invoke-WebRequest -URI "https://raw.githubusercontent.com/EricZimmerman/Get-ZimmermanTools/master/Get-ZimmermanTools.ps1" -OutFile ".\Tools\EZTools\Get-ZimmermanTools.ps1"

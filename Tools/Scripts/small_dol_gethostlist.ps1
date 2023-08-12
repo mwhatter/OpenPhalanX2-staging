@@ -1,5 +1,4 @@
-#Aligned and ready for testing
-# This script contains the logic to fetch all computers
+#Passed testing
 function Get-AllComputers {
     # Get a list of all domains in the forest
     $domains = (Get-ADForest).Domains

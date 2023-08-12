@@ -1,10 +1,6 @@
-#Passed Testing
 $computerName = if ($comboBoxComputerName.SelectedItem) {
     $comboBoxComputerName.SelectedItem.ToString()
-} else {
-    $comboBoxComputerName.Text
-}
-
+} else {$comboBoxComputerName.Text}
 if (![string]::IsNullOrEmpty($computerName)) {
     try {
         # Gather system info
@@ -46,7 +42,9 @@ if (![string]::IsNullOrEmpty($computerName)) {
         $adUserEntries | Export-Excel -Path ".\Logs\Reports\$computerName\ADRecon\SysUserADInfo.xlsx" -WorksheetName 'User AD Info' -AutoSize -AutoFilter -TableStyle Medium6 -Append
 
         # Print completion message
-        $textboxResults.AppendText("System and User AD Information exported to Excel workbook at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')`r`n")
+        $reconstart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $textboxResults.AppendText("System and User AD Information exported to Excel workbook at $reconstart`r`n")
+        Write-Host "System and User AD Information exported to Excel workbook at $reconstart" -ForegroundColor Green 
     } catch {
         $textboxResults.AppendText("Error obtaining system information: $_`r`n")
     }

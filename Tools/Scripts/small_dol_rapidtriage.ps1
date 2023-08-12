@@ -1,39 +1,32 @@
-$computerName = if ($comboBoxComputerName.SelectedItem) {
-    $comboBoxComputerName.SelectedItem.ToString()
-} else {
-    $comboBoxComputerName.Text
-}
-CollectForensicTimeline -HostName $computerName
-Get_PrefetchMetadata -HostName $computerName -exportPath $exportPath
-Copy_BrowserHistoryFiles -RemoteHost $computerName -LocalDestination "$exportPath\$computerName\RapidTriage\User_Browser&PSconsole"
-$colallstart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-Write-Host "RapidTriage of $computerName completed at $colallstart" -ForegroundColor Green 
-Log_Message -logfile $logfile -Message "RapidTriage of $computerName completed"
-$textboxResults.AppendText("RapidTriage of $computerName completed at $colallstart `r`n")
+param(
+    [string]$exportPath
+)
+
+$ComputerName = if ($comboBoxComputerName.SelectedItem) {$comboBoxComputerName.SelectedItem.ToString()} else {$comboBoxComputerName.Text}
 
 function CollectForensicTimeline {
     param (
-        [string[]]$Hostnames
+        [string[]]$ComputerNames
     )
     
-    foreach ($Hostname in $Hostnames) {
+    foreach ($ComputerName in $ComputerNames) {
         try {
-            $session = New-CimSession -ComputerName $Hostname -ErrorAction SilentlyContinue
+            $session = New-CimSession -ComputerName $ComputerName -ErrorAction SilentlyContinue
 
             if (-not $session) {
-                [System.Windows.Forms.MessageBox]::Show("Failed to connect to $Hostname. Please check the hostname and try again.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                [System.Windows.Forms.MessageBox]::Show("Failed to connect to $ComputerName. Please check the ComputerName and try again.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
                 continue
             }
 
-            New-Item -ItemType Directory -Path ".\Logs\Reports\$Hostname\RapidTriage" -Force | Out-Null
-            $ExcelFile = Join-Path ".\Logs\Reports\$Hostname\RapidTriage" "$Hostname-RapidTriage.xlsx"
+            New-Item -ItemType Directory -Path ".\Logs\Reports\$ComputerName\RapidTriage" -Force | Out-Null
+            $ExcelFile = Join-Path ".\Logs\Reports\$ComputerName\RapidTriage" "$ComputerName-RapidTriage.xlsx"
 
             $SystemUsers = Get-CimInstance -ClassName Win32_SystemUsers -CimSession $session
             if ($SystemUsers) {
                 $colSystStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-                Write-Host "Collected System Users from $HostName at $colSystStart" -ForegroundColor Cyan 
-                Log_Message -logfile $logfile -Message "Collected System Users from $HostName"
-                $textboxResults.AppendText("Collected System Users from $HostName at $colSystStart `r`n")
+                Write-Host "Collected System Users from $ComputerName at $colSystStart" -ForegroundColor Cyan 
+                Log_Message -logfile $logfile -Message "Collected System Users from $ComputerName"
+                $textboxResults.AppendText("Collected System Users from $ComputerName at $colSystStart `r`n")
                 $ExcelSystemUsers = $SystemUsers | Export-Excel -Path $ExcelFile -WorksheetName 'SystemUsers' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
                 Close-ExcelPackage $ExcelSystemUsers
             }
@@ -41,9 +34,9 @@ function CollectForensicTimeline {
             $Processes = Get-CimInstance -ClassName Win32_Process -CimSession $session | select-object -Property CreationDate,CSName,ProcessName,CommandLine,Path,ProcessId,ParentProcessId
 			if ($Processes) {
 				$colProcStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-				Write-Host "Collected Processes from $HostName at $colProcStart" -ForegroundColor Cyan 
-				Log_Message -logfile $logfile -Message "Collected Processes from $HostName"
-                $textboxResults.AppendText("Collected Processes from $HostName at $colProcStart `r`n")
+				Write-Host "Collected Processes from $ComputerName at $colProcStart" -ForegroundColor Cyan 
+				Log_Message -logfile $logfile -Message "Collected Processes from $ComputerName"
+                $textboxResults.AppendText("Collected Processes from $ComputerName at $colProcStart `r`n")
 				$ExcelProcesses = $Processes | Export-Excel -Path $ExcelFile -WorksheetName 'Processes' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
 				$worksheet = $ExcelProcesses.Workbook.Worksheets['Processes']
 				$cmdLineCol = $worksheet.Dimension.Start.Column + ($worksheet.Dimension.End.Column - $worksheet.Dimension.Start.Column) - 3
@@ -56,9 +49,9 @@ function CollectForensicTimeline {
 			$ScheduledTasks = Get-ScheduledTask -CimSession $session | select-object -Property Date,PSComputerName,Author,Description,TaskName,TaskPath
 			if ($ScheduledTasks) {
 				$colSchedTasksStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-				Write-Host "Collected Scheduled Tasks from $HostName at $colSchedTasksStart" -ForegroundColor Cyan 
-				Log_Message -logfile $logfile -Message "Collected Scheduled Tasks from $HostName"
-                $textboxResults.AppendText("Collected Scheduled Tasks from $HostName at $colSchedTasksStart `r`n")
+				Write-Host "Collected Scheduled Tasks from $ComputerName at $colSchedTasksStart" -ForegroundColor Cyan 
+				Log_Message -logfile $logfile -Message "Collected Scheduled Tasks from $ComputerName"
+                $textboxResults.AppendText("Collected Scheduled Tasks from $ComputerName at $colSchedTasksStart `r`n")
 				$ExcelScheduledTasks = $ScheduledTasks | Export-Excel -Path $ExcelFile -WorksheetName 'ScheduledTasks' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
 				$worksheett = $ExcelScheduledTasks.Workbook.Worksheets['ScheduledTasks']
 				$descrCol = $worksheett.Dimension.Start.Column + ($worksheett.Dimension.End.Column - $worksheett.Dimension.Start.Column) - 2
@@ -69,9 +62,9 @@ function CollectForensicTimeline {
 			$Services = Get-CimInstance -ClassName Win32_Service -CimSession $session | select-object -Property PSComputerName,Caption,Description,Name,StartMode,PathName,ProcessId,ServiceType,StartName,State
 			if ($Services) {
 				$colServStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-				Write-Host "Collected Services from $HostName at $colServStart" -ForegroundColor Cyan 
-				Log_Message -logfile $logfile -Message "Collected Services from $HostName"
-                $textboxResults.AppendText("Collected Services from $HostName at $colServStart `r`n")
+				Write-Host "Collected Services from $ComputerName at $colServStart" -ForegroundColor Cyan 
+				Log_Message -logfile $logfile -Message "Collected Services from $ComputerName"
+                $textboxResults.AppendText("Collected Services from $ComputerName at $colServStart `r`n")
 				$ExcelServices = $Services | Export-Excel -Path $ExcelFile -WorksheetName 'Services' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
 				$worksheets = $ExcelServices.Workbook.Worksheets['Services']
 				$descr2Col = $worksheets.Dimension.Start.Column + ($worksheets.Dimension.End.Column - $worksheets.Dimension.Start.Column) - 7
@@ -82,9 +75,9 @@ function CollectForensicTimeline {
             $WMIConsumer = Get-CimInstance -Namespace root/subscription -ClassName __EventConsumer -CimSession $session 
             if ($WMIConsumer) {
                 $colWMIContStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-                Write-Host "Collected WMI Consumer Events from $HostName at $colWMIContStart" -ForegroundColor Cyan 
-                Log_Message -logfile $logfile -Message "Collected WMI Consumer Events from $HostName"
-                $textboxResults.AppendText("Collected WMI Consumer Events from $HostName at $colWMIContStart `r`n")
+                Write-Host "Collected WMI Consumer Events from $ComputerName at $colWMIContStart" -ForegroundColor Cyan 
+                Log_Message -logfile $logfile -Message "Collected WMI Consumer Events from $ComputerName"
+                $textboxResults.AppendText("Collected WMI Consumer Events from $ComputerName at $colWMIContStart `r`n")
                 $ExcelWMIConsumer = $WMIConsumer | Export-Excel -Path $ExcelFile -WorksheetName 'WMIConsumer' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
                 Close-ExcelPackage $ExcelWMIConsumer
             }
@@ -92,9 +85,9 @@ function CollectForensicTimeline {
             $WMIBindings = Get-CimInstance -Namespace root/subscription -ClassName __FilterToConsumerBinding -CimSession $session 
             if ($WMIBindings) {
                 $colWMIBindStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-                Write-Host "Collected WMI Bindings from $HostName at $colWMIBindStart" -ForegroundColor Cyan 
-                Log_Message -logfile $logfile -Message "Collected WMI Bindings from $HostName"
-                $textboxResults.AppendText("Collected WMI Bindings from $HostName at $colWMIBindStart `r`n")
+                Write-Host "Collected WMI Bindings from $ComputerName at $colWMIBindStart" -ForegroundColor Cyan 
+                Log_Message -logfile $logfile -Message "Collected WMI Bindings from $ComputerName"
+                $textboxResults.AppendText("Collected WMI Bindings from $ComputerName at $colWMIBindStart `r`n")
                 $ExcelWMIBindings = $WMIBindings | Export-Excel -Path $ExcelFile -WorksheetName 'WMIBindings' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
                 Close-ExcelPackage $ExcelWMIBindings
             }
@@ -102,9 +95,9 @@ function CollectForensicTimeline {
 			$WMIFilter = Get-CimInstance -Namespace root/subscription -ClassName __EventFilter -CimSession $session 
 			if ($WMIFilter) {
 				$colWMIFiltStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-				Write-Host "Collected WMI Filters from $HostName at $colWMIFiltStart" -ForegroundColor Cyan 
-				Log_Message -logfile $logfile -Message "Collected WMI Filters from $HostName"
-                $textboxResults.AppendText("Collected WMI Filters from $HostName at $colWMIFiltStart `r`n")
+				Write-Host "Collected WMI Filters from $ComputerName at $colWMIFiltStart" -ForegroundColor Cyan 
+				Log_Message -logfile $logfile -Message "Collected WMI Filters from $ComputerName"
+                $textboxResults.AppendText("Collected WMI Filters from $ComputerName at $colWMIFiltStart `r`n")
 				$ExcelWMIFilter = $WMIFilter | Export-Excel -Path $ExcelFile -WorksheetName 'WMIFilter' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
 				Close-ExcelPackage $ExcelWMIFilter
 			}
@@ -112,9 +105,9 @@ function CollectForensicTimeline {
 			$Shares = Get-CimInstance -ClassName Win32_Share -CimSession $session
 			if ($Shares) {
 				$colSharesStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-				Write-Host "Collected Shares from $HostName at $colSharesStart" -ForegroundColor Cyan 
-				Log_Message -logfile $logfile -Message "Collected Shares from $HostName"
-                $textboxResults.AppendText("Collected Shares from $HostName at $colSharesStart `r`n")
+				Write-Host "Collected Shares from $ComputerName at $colSharesStart" -ForegroundColor Cyan 
+				Log_Message -logfile $logfile -Message "Collected Shares from $ComputerName"
+                $textboxResults.AppendText("Collected Shares from $ComputerName at $colSharesStart `r`n")
 				$ExcelShares = $Shares | Export-Excel -Path $ExcelFile -WorksheetName 'Shares' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
 				Close-ExcelPackage $ExcelShares
 			}
@@ -122,9 +115,9 @@ function CollectForensicTimeline {
 			$ShareToDirectory = Get-CimInstance -ClassName Win32_ShareToDirectory -CimSession $session
 			if ($ShareToDirectory) {
 				$colShareToDirStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-				Write-Host "Collected ShareToDirectory from $HostName at $colShareToDirStart" -ForegroundColor Cyan 
-				Log_Message -logfile $logfile -Message "Collected ShareToDirectory from $HostName"
-                $textboxResults.AppendText("Collected ShareToDirectory from $HostName at $colShareToDirStart `r`n")
+				Write-Host "Collected ShareToDirectory from $ComputerName at $colShareToDirStart" -ForegroundColor Cyan 
+				Log_Message -logfile $logfile -Message "Collected ShareToDirectory from $ComputerName"
+                $textboxResults.AppendText("Collected ShareToDirectory from $ComputerName at $colShareToDirStart `r`n")
 				$ExcelShareToDirectory = $ShareToDirectory | Export-Excel -Path $ExcelFile -WorksheetName 'ShareToDirectory' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
 				Close-ExcelPackage $ExcelShareToDirectory
 			}
@@ -132,27 +125,27 @@ function CollectForensicTimeline {
 			$StartupCommand = Get-CimInstance -ClassName Win32_StartupCommand -CimSession $session | select-object -Property PSComputerName,User,UserSID,Name,Command,Location
 			if ($StartupCommand) {
 				$colStartupCmdStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-				Write-Host "Collected Startup Commands from $HostName at $colStartupCmdStart" -ForegroundColor Cyan 
-				Log_Message -logfile $logfile -Message "Collected Startup Commands from $HostName"
-                $textboxResults.AppendText("Collected Startup Commands from $HostName at $colStartupCmdStart `r`n")
+				Write-Host "Collected Startup Commands from $ComputerName at $colStartupCmdStart" -ForegroundColor Cyan 
+				Log_Message -logfile $logfile -Message "Collected Startup Commands from $ComputerName"
+                $textboxResults.AppendText("Collected Startup Commands from $ComputerName at $colStartupCmdStart `r`n")
 				$ExcelStartupCommand = $StartupCommand | Export-Excel -Path $ExcelFile -WorksheetName 'StartupCommand' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
 				Close-ExcelPackage $ExcelStartupCommand
 			}
 
-			$NetworkConnections = Invoke-Command -ComputerName $Hostname -ScriptBlock { Get-NetTCPConnection } -ErrorAction SilentlyContinue | select-object -Property CreationTime,State,LocalAddress,LocalPort,OwningProcess,RemoteAddress,RemotePort
+			$NetworkConnections = Invoke-Command -ComputerName $ComputerName -ScriptBlock { Get-NetTCPConnection } -ErrorAction SilentlyContinue | select-object -Property CreationTime,State,LocalAddress,LocalPort,OwningProcess,RemoteAddress,RemotePort
             if ($NetworkConnections) {
                 $colNetConnStart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-                Write-Host "Collected Network Connections from $HostName at $colNetConnStart" -ForegroundColor Cyan 
-                Log_Message -logfile $logfile -Message "Collected Network Connections from $HostName"
-                $textboxResults.AppendText("Collected Network Connections from $HostName at $colNetConnStart `r`n")
+                Write-Host "Collected Network Connections from $ComputerName at $colNetConnStart" -ForegroundColor Cyan 
+                Log_Message -logfile $logfile -Message "Collected Network Connections from $ComputerName"
+                $textboxResults.AppendText("Collected Network Connections from $ComputerName at $colNetConnStart `r`n")
                 $ExcelNetworkConnections = $NetworkConnections | Export-Excel -Path $ExcelFile -WorksheetName 'NetworkConnections' -AutoSize -AutoFilter -TableStyle Medium6 -Append -PassThru
                 Close-ExcelPackage $ExcelNetworkConnections
             }
         }
 			catch {
-                Write-Host "An error occurred while collecting data from $HostName $($_.Exception.Message)" -ForegroundColor Red
-                Log_Message -logfile $logfile -Message "An error occurred while collecting data from $HostName $($_.Exception.Message)"
-                $textboxResults.AppendText("An error occurred while collecting data from $HostName $($_.Exception.Message) `r`n")
+                Write-Host "An error occurred while collecting data from $ComputerName $($_.Exception.Message)" -ForegroundColor Red
+                Log_Message -logfile $logfile -Message "An error occurred while collecting data from $ComputerName $($_.Exception.Message)"
+                $textboxResults.AppendText("An error occurred while collecting data from $ComputerName $($_.Exception.Message) `r`n")
             }            
 }
 }
@@ -174,29 +167,29 @@ function Get-PECmdPath {
 
 function Get_PrefetchMetadata {
     param(
-        [string]$HostName,
+        [string]$ComputerName,
         [string]$exportPath
     )
 
-    if ([string]::IsNullOrEmpty($HostName)) {
+    if ([string]::IsNullOrEmpty($ComputerName)) {
         Write-Host "Error: ComputerName is null or empty" -ForegroundColor Red
         return
     }
 
-    $driveLetters = Get_RemoteDriveLetters -HostName $HostName
+    $driveLetters = Get_RemoteDriveLetters -ComputerName $ComputerName
 
-    $ExcelFile = Join-Path $exportPath\$HostName\RapidTriage "$HostName-RapidTriage.xlsx"
+    $ExcelFile = Join-Path $exportPath\$ComputerName\RapidTriage "$ComputerName-RapidTriage.xlsx"
     
-    $copiedFilesPath = ".\CopiedFiles\$HostName\Prefetch"
+    $copiedFilesPath = ".\CopiedFiles\$ComputerName\Prefetch"
     New-Item -Path $copiedFilesPath -ItemType Directory -Force
 
     $pecmdPath = Get-PECmdPath
-    $csvOutputDir = "$exportPath\$HostName\RapidTriage\CSVOutput"
+    $csvOutputDir = "$exportPath\$ComputerName\RapidTriage\CSVOutput"
     New-Item -Path $csvOutputDir -ItemType Directory -Force
 
     foreach ($driveLetter in $driveLetters) {
         # Convert drive letter path to UNC format
-        $prefetchPath = "\\$HostName\$driveLetter$\Windows\Prefetch\*.pf"
+        $prefetchPath = "\\$ComputerName\$driveLetter$\Windows\Prefetch\*.pf"
         $prefetchFiles = Get-ChildItem -Path $prefetchPath -ErrorAction SilentlyContinue
 
         foreach ($file in $prefetchFiles) {
@@ -217,9 +210,9 @@ function Get_PrefetchMetadata {
 
     Remove-Item -Path $csvOutputDir -Force -Recurse
     $colprestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Host "Collected Prefetch from $HostName at $colprestart" -ForegroundColor Cyan 
-    Log_Message -logfile $logfile -Message "Collected Prefetch from $HostName"
-    $textboxResults.AppendText("Collected Prefetch from $HostName at $colprestart `r`n")
+    Write-Host "Collected Prefetch from $ComputerName at $colprestart" -ForegroundColor Cyan 
+    Log_Message -logfile $logfile -Message "Collected Prefetch from $ComputerName"
+    $textboxResults.AppendText("Collected Prefetch from $ComputerName at $colprestart `r`n")
 }
 function Copy_BrowserHistoryFiles {
     param (
@@ -230,12 +223,12 @@ function Copy_BrowserHistoryFiles {
     $session = New-CimSession -ComputerName $RemoteHost -ErrorAction SilentlyContinue
 
     if (-not $session) {
-        [System.Windows.Forms.MessageBox]::Show("Failed to connect to $RemoteHost. Please check the hostname and try again.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        [System.Windows.Forms.MessageBox]::Show("Failed to connect to $RemoteHost. Please check the ComputerName and try again.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         return
     }
 
     $UserProfiles = Get-CimInstance -ClassName Win32_UserProfile -CimSession $session
-    $driveLetters = Get_RemoteDriveLetters -HostName $RemoteHost
+    $driveLetters = Get_RemoteDriveLetters -ComputerName $RemoteHost
 
     if (-not (Test-Path $LocalDestination)) {
         New-Item -ItemType Directory -Path $LocalDestination | Out-Null
@@ -327,12 +320,19 @@ function Copy_BrowserHistoryFiles {
 
 function Get_RemoteDriveLetters {
     param(
-        [string]$HostName
+        [string]$ComputerName
     )
 
-    $driveLetters = Invoke-Command -ComputerName $HostName -ScriptBlock {
+    $driveLetters = Invoke-Command -ComputerName $ComputerName -ScriptBlock {
         Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 } | ForEach-Object { $_.DeviceID.TrimEnd(':') }
     }
 
     return $driveLetters
 }
+
+CollectForensicTimeline -ComputerName $ComputerName
+Get_PrefetchMetadata -ComputerName $ComputerName -exportPath $exportPath
+Copy_BrowserHistoryFiles -RemoteHost $ComputerName -LocalDestination "$exportPath\$ComputerName\RapidTriage\User_Browser&PSconsole"
+
+$colallstart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+Write-Host "RapidTriage of $ComputerName completed at $colallstart" -ForegroundColor Green 

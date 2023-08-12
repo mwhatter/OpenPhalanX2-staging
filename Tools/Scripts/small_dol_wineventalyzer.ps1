@@ -1,5 +1,7 @@
-$computerName = if ($comboBoxComputerName.SelectedItem) {$comboBoxComputerName.SelectedItem.ToString()} else {$comboBoxComputerName.Text}
+$CWD = (Get-Location).Path
+$EVTXPath = "$CWD\Logs\EVTX"
 
+$ComputerName = if ($comboBoxComputerName.SelectedItem) {$comboBoxComputerName.SelectedItem.ToString()} else {$comboBoxComputerName.Text}
 function Export_AllLogs {
     param (
         $EVTXPath,
@@ -74,12 +76,12 @@ function Process_Hayabusa {
     )
     New-Item -Path "$exportPath\$ComputerName" -ItemType Directory -Force | Out-Null
     New-Item -Path "$exportPath\$ComputerName\Hayabusa" -ItemType Directory -Force | Out-Null  
-    $hayabusaPath = "$CWD\Tools\Hayabusa\hayabusa.exe"
+    $hayabusaPath = ".\Tools\Hayabusa\hayabusa.exe"
 
-    & $hayabusaPath logon-summary -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\logon-summary.csv" 
-    & $hayabusaPath metrics -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\metrics.csv" 
-    & $hayabusaPath pivot-keywords-list -d "$EVTXPath\$ComputerName" -o "$exportPath\$ComputerName\Hayabusa\pivot-keywords-list.csv" 
-    & $hayabusaPath csv-timeline -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\csv-timeline.csv" -p super-verbose 
+    & $hayabusaPath logon-summary -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\logon-summary.csv" | Out-Null
+    & $hayabusaPath metrics -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\metrics.csv" | Out-Null
+    & $hayabusaPath pivot-keywords-list -d "$EVTXPath\$ComputerName" -o "$exportPath\$ComputerName\Hayabusa\pivot-keywords-list.csv" | Out-Null
+    & $hayabusaPath csv-timeline -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\csv-timeline.csv" -p super-verbose | Out-Null
     $colhayastart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "Hayabusa analyzed logs from $ComputerName at $colhayastart" -ForegroundColor Cyan 
     $textboxResults.AppendText("Hayabusa analyzed logs from $ComputerName at $colhayastart `r`n")
@@ -91,19 +93,16 @@ function Process_DeepBlueCLI {
     )
     New-Item -Path "$exportPath\$ComputerName" -ItemType Directory -Force | Out-Null
     New-Item -Path "$exportPath\$ComputerName\DeepBlueCLI" -ItemType Directory -Force | Out-Null
-    $deepBlueCLIPath = "$CWD\Tools\DeepBlueCLI\DeepBlue.ps1"
+    set-location .\Tools\DeepBlueCLI\
+    $deepBlueCLIPath = ".\DeepBlue.ps1"
     
     $logFiles = @("security.evtx", "system.evtx", "Application.evtx", "Microsoft-Windows-Sysmon%4Operational.evtx", "Windows PowerShell.evtx", "Microsoft-Windows-AppLocker%4EXE and DLL.evtx")
     foreach($logFile in $logFiles) {
         $outFile = Join-Path "$exportPath\$ComputerName\DeepBlueCLI" "$($logFile -replace ".evtx", ".txt")"
-        try {
-            & $deepBlueCLIPath "$EVTXPath\$ComputerName\$logFile" -ErrorAction SilentlyContinue | Out-File -FilePath $outFile
-        }
-        catch {
-            # Suppress the error message by doing nothing
-        }
+        & $deepBlueCLIPath "$EVTXPath\$ComputerName\$logFile" -ErrorAction SilentlyContinue | Out-File -FilePath $outFile
+        
     }
-
+    set-location ..\..
     $coldeepstart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "DeepBlueCLI analyzed logs from $ComputerName at $coldeepstart" -ForegroundColor Cyan 
     $textboxResults.AppendText("DeepBlueCLI analyzed logs from $ComputerName at $coldeepstart `r`n")
@@ -120,3 +119,7 @@ function Get_RemoteDriveLetters {
 
     return $driveLetters
 }
+
+Export_AllLogs -EVTXPath $EVTXPath -ComputerName $ComputerName
+Process_Hayabusa -ComputerName $ComputerName
+Process_DeepBlueCLI -ComputerName $ComputerName

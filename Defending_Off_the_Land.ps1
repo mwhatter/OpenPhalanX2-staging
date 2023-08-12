@@ -103,7 +103,6 @@ New-Item -ItemType Directory -Path "$CWD\Logs\Audit" -Force | Out-Null
 $LogFile = "$CWD\Logs\Audit\$logstart.DOL.auditlog.txt"
 $Username = $env:USERNAME
 $CopiedFilesDir = "$CWD\CopiedFiles"
-$EVTXPath = "$CWD\Logs\EVTX"
 $exportPath = "$CWD\Logs\Reports"
 $script:allComputers = @()
 $InformationPreference = 'SilentlyContinue'
@@ -147,14 +146,14 @@ $textboxResults.AppendText("Session started at $ScriptStartTime `r`n")
 
 # Pop out button inside the textbox
 $btnPopOut = New-Object System.Windows.Forms.Button
-$btnPopOut.Text = "Pop-out"
-$btnPopOut.Width = 60
+$btnPopOut.Text = "Expand View"
+$btnPopOut.Width = 80
 $btnPopOut.Height = 20
 $btnPopOut.BackColor = [System.Drawing.Color]::Black
 $btnPopOut.ForeColor = [System.Drawing.Color]::lightseagreen
 $btnPopOut.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
 $btnPopOut.FlatAppearance.BorderSize = 1
-$btnPopOut.Location = New-Object System.Drawing.Point(460, 0) 
+$btnPopOut.Location = New-Object System.Drawing.Point(440, 0) 
 $btnPopOut.Add_Click({
     $popupForm = New-Object System.Windows.Forms.Form
     $popupForm.Text = "Results"
@@ -191,7 +190,6 @@ $btnSave = New-Object System.Windows.Forms.Button
 $btnSave.Text = "Save"
 $btnSave.Location = New-Object System.Drawing.Point(100, 0) # Adjust location as needed
 $btnSave.Add_Click({
-    Write-Host "Content to save: $($popupTextbox.Text)"
     $saveFileDialog = New-Object System.Windows.Forms.SaveFileDialog
     $saveFileDialog.Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"
     
@@ -215,6 +213,12 @@ $btnSave.Add_Click({
 })
 $textboxResults.Controls.Add($btnPopOut)
 
+$statusLabel = New-Object System.Windows.Forms.Label
+$statusLabel.Location = New-Object System.Drawing.Point(250, 0)
+$statusLabel.Size = New-Object System.Drawing.Size(200, 20)
+$statusLabel.Text = ""
+$form.Controls.Add($statusLabel)
+
 $helpButton = New-Object System.Windows.Forms.Button
 $helpButton.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $helpButton.Location = New-Object System.Drawing.Point(15, 20) 
@@ -226,12 +230,14 @@ $form.Controls.Add($helpButton)
 $buttonSysInfo = New-Object System.Windows.Forms.Button
 $buttonSysInfo.Location = New-Object System.Drawing.Point(315, 20)
 $buttonSysInfo.Size = New-Object System.Drawing.Size(80, 40)
-$buttonSysInfo.Text = "Recon"
+$buttonSysInfo.Text = "Reconnoiter"
 $buttonSysInfo.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonSysInfo.Add_Click({
+    $statusLabel.Text = "Working..."
     $computerName = if ($comboBoxComputerName.SelectedItem) {$comboBoxComputerName.SelectedItem.ToString()} else {$comboBoxComputerName.Text}
     & ".\Tools\Scripts\small_dol_recon.ps1"
     Log_Message -logfile $LogFile -Message "System and User AD Information exported from $computerName to Excel workbook"
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonSysInfo)
 
@@ -277,9 +283,11 @@ $buttonGetHostList.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonGetHostList.Location = New-Object System.Drawing.Point(53, 50)
 $buttonGetHostList.Size = New-Object System.Drawing.Size(90, 23)
 $buttonGetHostList.Add_Click({
+    $statusLabel.Text = "Working..."
     $comboBoxComputerName.Items.Clear()
     $script:allComputers = & ".\Tools\Scripts\small_dol_gethostlist.ps1"
     $comboBoxComputerName.Items.AddRange($script:allComputers)
+    $statusLabel.Text = "Done"
 })
 $Form.Controls.Add($buttonGetHostList)
 
@@ -299,14 +307,16 @@ $form.Controls.Add($buttonKillProcess)
 $buttonCopyBinaries = New-Object System.Windows.Forms.Button
 $buttonCopyBinaries.Location = New-Object System.Drawing.Point(395, 60)
 $buttonCopyBinaries.Size = New-Object System.Drawing.Size(80, 40)
-$buttonCopyBinaries.Text = "Copy All Modules"
+$buttonCopyBinaries.Text = "Copy   Modules"
 $buttonCopyBinaries.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonCopyBinaries.Add_Click({
+    $statusLabel.Text = "Working..."
     $computerName = if ($comboBoxComputerName.SelectedItem) {$comboBoxComputerName.SelectedItem.ToString()} else {$comboBoxComputerName.Text}
     if (![string]::IsNullOrEmpty($computerName) -and ![string]::IsNullOrEmpty($CopiedFilesDir)) {
         .\Tools\Scripts\small_dol_copymodules.ps1 -CopiedFilesPath $CopiedFilesDir
         Log_Message -logfile $logfile -Message "Copied all modules from $computerName"
     } else {[System.Windows.Forms.MessageBox]::Show("Please enter a valid computer name.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)}
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonCopyBinaries)
 
@@ -346,9 +356,11 @@ $RapidTriageButton.Size = New-Object System.Drawing.Size(80, 40)
 $RapidTriageButton.Text = 'RapidTriage'
 $RapidTriageButton.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $RapidTriageButton.Add_Click({
+    $statusLabel.Text = "Working..."
     $computerName = if ($comboBoxComputerName.SelectedItem) {$comboBoxComputerName.SelectedItem.ToString()} else {$comboBoxComputerName.Text}
     & ".\Tools\Scripts\small_dol_rapidtriage.ps1" -computerName $computerName -exportPath $exportPath
     Log_Message -logfile $logfile -Message "RapidTriage completed on $computerName"
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($RapidTriageButton)
 
@@ -358,9 +370,16 @@ $WinEventalyzerButton.Size = New-Object System.Drawing.Size(80, 40)
 $WinEventalyzerButton.Text = 'Win-Eventalyzer'
 $WinEventalyzerButton.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $WinEventalyzerButton.Add_Click({
-    $computerName = if ($comboBoxComputerName.SelectedItem) {$comboBoxComputerName.SelectedItem.ToString()} else {$comboBoxComputerName.Text}
-    .\Tools\Scripts\small_dol_wineventalyzer.ps1 -ComputerName $computerName
-    Log_Message -logfile $logfile -Message "Win-Eventalyzer completed on $computerName"
+    $statusLabel.Text = "Working..."
+    try {
+        $scriptOutput = .\Tools\Scripts\small_dol_wineventalyzer.ps1
+        $statusLabel.Text = "Done"
+        # Display the script's output for debugging purposes
+        Write-Host $scriptOutput
+    } catch {
+        $statusLabel.Text = "Error"
+        Write-Host $_.Exception.Message
+    }
 })
 $form.Controls.Add($WinEventalyzerButton)
 
@@ -370,7 +389,9 @@ $buttonProcAsso.Size = New-Object System.Drawing.Size(80,40)
 $buttonProcAsso.Text = "ProcAsso"
 $buttonProcAsso.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonProcAsso.Add_Click({
+    $statusLabel.Text = "Working..."
     
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonProcAsso)
 
@@ -407,7 +428,9 @@ $buttonInstallSysmon.Size = New-Object System.Drawing.Size(70, 40)
 $buttonInstallSysmon.Text = "Deploy Sysmon"
 $buttonInstallSysmon.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonInstallSysmon.Add_Click({
+    $statusLabel.Text = "Working..."
     
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonInstallSysmon)
 
@@ -442,7 +465,9 @@ $buttonCopyFile.Size = New-Object System.Drawing.Size(75, 40)
 $buttonCopyFile.Text = "Copy"
 $buttonCopyFile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonCopyFile.Add_Click({
+    $statusLabel.Text = "Working..."
     
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonCopyFile)
 
@@ -452,7 +477,9 @@ $buttonHuntFile.Size = New-Object System.Drawing.Size(75, 40)
 $buttonHuntFile.Text = "Hunt File"
 $buttonHuntFile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonHuntFile.Add_Click({
+    $statusLabel.Text = "Working..."
     
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonHuntFile)
 
@@ -462,7 +489,9 @@ $buttonDeleteFile.Size = New-Object System.Drawing.Size(75, 40)
 $buttonDeleteFile.Text = "Delete"
 $buttonDeleteFile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonDeleteFile.Add_Click({
+    $statusLabel.Text = "Working..."
     
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonDeleteFile)
 
@@ -487,8 +516,10 @@ $buttonGetIntel.Size = New-Object System.Drawing.Size(75, 40)
 $buttonGetIntel.Text = "Get Intel"
 $buttonGetIntel.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonGetIntel.Add_Click({
+    $statusLabel.Text = "Working..."
     $indicator = $TextBoxUrl.Text
     .\Tools\Scripts\small_dol_getintel.ps1 -IndicatorFromMain $indicator
+    $statusLabel.Text = "Done"
 })
 $Form.Controls.Add($buttonGetIntel)
 
@@ -498,8 +529,10 @@ $buttonSubmitUrl.Size = New-Object System.Drawing.Size(70, 40)
 $buttonSubmitUrl.Text = "Sandbox URL"
 $buttonSubmitUrl.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonSubmitUrl.Add_Click({
+    $statusLabel.Text = "Working..."
     $TextBoxUrlt = $TextBoxUrl.Text
     .\Tools\Scripts\small_dol_submiturl.ps1 -UrlFromMain $TextBoxUrlt
+    $statusLabel.Text = "Done"
 })
 $Form.Controls.Add($buttonSubmitUrl)
 
@@ -510,7 +543,9 @@ $buttonRetrieveReport.Text = "Retrieve Report"
 $buttonRetrieveReport.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonRetrieveReport.Enabled = $false
 $buttonRetrieveReport.Add_Click({
+    $statusLabel.Text = "Working..."
     
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonRetrieveReport)
 
@@ -584,7 +619,9 @@ $buttonRetrieveReportfile.Text = "Retrieve Report"
 $buttonRetrieveReportfile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonRetrieveReportfile.Enabled = $false
 $buttonRetrieveReportfile.Add_Click({
+    $statusLabel.Text = "Working..."
     
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonRetrieveReportfile)
 
@@ -664,7 +701,9 @@ $UsnJrnlButton.Size = New-Object System.Drawing.Size(70, 40)
 $UsnJrnlButton.Text = 'USN Jrnl Collection'
 $UsnJrnlButton.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $UsnJrnlButton.Add_Click({
-    
+    $statusLabel.Text = "Working..."
+
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($UsnJrnlButton)
 
@@ -674,8 +713,10 @@ $buttonBoxEmAll.Size = New-Object System.Drawing.Size(75,40)
 $buttonBoxEmAll.Text = "BoxEmAll"
 $buttonBoxEmAll.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonBoxEmAll.Add_Click({
+    $statusLabel.Text = "Working..."
     $output = & ".\Tools\Scripts\box_em_all.ps1"
     $textboxResults.AppendText($output)
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonBoxEmAll)
 
@@ -685,7 +726,9 @@ $buttonIntelligizer.Size = New-Object System.Drawing.Size(70,40)
 $buttonIntelligizer.Text = "Intelligazer"
 $buttonIntelligizer.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonIntelligizer.Add_Click({
-    
+    $statusLabel.Text = "Working..."
+
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonIntelligizer)
 
@@ -705,7 +748,9 @@ $buttonPlaceAndRun.Size = New-Object System.Drawing.Size(75, 40)
 $buttonPlaceAndRun.Text = "Place and Run"
 $buttonPlaceAndRun.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonPlaceAndRun.Add_Click({
-    
+    $statusLabel.Text = "Working..."
+
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonPlaceAndRun)
 
@@ -715,6 +760,7 @@ $executeCommandButton.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $executeCommandButton.Location = New-Object System.Drawing.Point(480, 355)
 $executeCommandButton.Size = New-Object System.Drawing.Size(75, 40)
 $executeCommandButton.Add_Click({
+    $statusLabel.Text = "Working..."
     $computerName = if ($comboBoxComputerName.SelectedItem) {
         $comboBoxComputerName.SelectedItem.ToString()
     } else {$comboBoxComputerName.Text}
@@ -722,6 +768,7 @@ $executeCommandButton.Add_Click({
     $output = & ".\Tools\Scripts\small_dol_oneliner.ps1" -ComputerNameFromMain $computerName -CommandFromMain $command
     $textboxResults.AppendText($output)
     Log_Message -Message $output -LogFilePath $LogFile
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($executeCommandButton)
 
@@ -730,9 +777,7 @@ $buttonReset.Location = New-Object System.Drawing.Point(245, 370)
 $buttonReset.Size = New-Object System.Drawing.Size(80, 23)
 $buttonReset.Text = "Reset"
 $buttonReset.Anchor = [System.Windows.Forms.AnchorStyles]::Top
-$buttonReset.Add_Click({
-
-})
+$buttonReset.Add_Click({& ".\Tools\Scripts\small_dol_resetform.ps1"})
 $form.Controls.Add($buttonReset)
 
 $tooltip = New-Object System.Windows.Forms.ToolTip

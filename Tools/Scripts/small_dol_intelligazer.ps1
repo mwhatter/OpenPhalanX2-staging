@@ -56,7 +56,7 @@ $Intelligazerstart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 Write-Host "Intelligazer started at $Intelligazerstart" -ForegroundColor Cyan
 Log_Message -logfile $logfile -Message "Intelligazer started at "
 $textboxResults.AppendText("Intelligazer started at $Intelligazerstart `r`n")
-$logDirs = ".\Logs\Reports\$computerName\ProcessAssociations", ".\Logs\EVTX\$computerName", ".\Logs\Reports\$computerName\RapidTriage", ".\Logs\Reports\$computerName\ADRecon"
+$logDirs = ".\Logs\EVTX\$computerName", ".\Logs\Reports\$computerName\RapidTriage", ".\Logs\Reports\$computerName\ADRecon"
 
 
 function processMatches($content, $file) {
@@ -127,32 +127,49 @@ foreach ($dir in $logDirs) {
                     $output.AddRange(@($matchess))
                 }
             }
-            '\.xlsx$' {
-                $excel = New-Object -ComObject Excel.Application
-                $workbook = $excel.Workbooks.Open($file)
+            '\.xlsx?$' {
+                $excel = $null
+                $workbook = $null
             
-                foreach ($sheet in $workbook.Worksheets) {
-                    try {
-                        $range = $sheet.UsedRange
-                        $content = $range.Value2 | Out-String
-                        $matchess = processMatches $content $file
-                        if ($matchess -ne $null) {
-                            $output.AddRange($matchess)
-                        } 
-                    }
-                    catch {
-                        #Write-Host "An error occurred: $_"
-                    }
-                    finally {
-                        # Any cleanup code goes here
+                try {
+                    $excel = New-Object -ComObject Excel.Application
+                    $excel.Visible = $false # Ensure Excel runs in the background
+                    
+                    $workbook = $excel.Workbooks.Open($file)
+                    
+                    foreach ($sheet in $workbook.Worksheets) {
+                        try {
+                            $range = $sheet.UsedRange
+                            $content = $range.Value2 | Out-String
+                            $matches = processMatches $content $file
+                            if ($matches -ne $null) {
+                                $output.AddRange($matches)
+                            } 
+                        }
+                        catch {
+                            Write-Error "Error processing sheet: $_"
+                        }
                     }
                 }
-                
+                catch {
+                    Write-Error "An error occurred: $_"
+                }
+                finally {
+                    if ($workbook) {
+                        $workbook.Close($false)
+                        [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
+                    }
             
-                $excel.Quit()
-                [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
-                [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
-            } 
+                    if ($excel) {
+                        $excel.Quit()
+                        [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+                    }
+            
+                    [System.GC]::Collect()
+                    [System.GC]::WaitForPendingFinalizers()
+                }
+            }
+            
             default {
                 if ((Get-File $file).IsText) {
                     $content = Get-Content $file

@@ -3,15 +3,18 @@ $computerName = if ($comboBoxComputerName.SelectedItem) {
 } else {
     $comboBoxComputerName.Text
 }
-$RemoteDriveLetters = Get_RemoteDriveLetters -HostName $computerName
-    foreach ($DriveLetter in $RemoteDriveLetters) {
-        $result = Copy_USNJournal -HostName $computerName -Destination $exportPath -DriveLetter $DriveLetter
-        if ($result -and $result.StartsWith("Error")) {
-            Write-Host $result -ForegroundColor Red
-        } elseif ($result) {
-            Write-Host $result -ForegroundColor Green
-        }
-        }
+
+function Get_RemoteDriveLetters {
+    param(
+        [string]$HostName
+    )
+
+    $driveLetters = Invoke-Command -ComputerName $HostName -ScriptBlock {
+        Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 } | ForEach-Object { $_.DeviceID.TrimEnd(':') }
+    }
+
+    return $driveLetters
+}
 
 function Copy_USNJournal {
     param(
@@ -80,14 +83,12 @@ function Copy_USNJournal {
     }
 }
 
-function Get_RemoteDriveLetters {
-    param(
-        [string]$HostName
-    )
-
-    $driveLetters = Invoke-Command -ComputerName $HostName -ScriptBlock {
-        Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 } | ForEach-Object { $_.DeviceID.TrimEnd(':') }
-    }
-
-    return $driveLetters
-}
+$RemoteDriveLetters = Get_RemoteDriveLetters -HostName $computerName
+    foreach ($DriveLetter in $RemoteDriveLetters) {
+        $result = Copy_USNJournal -HostName $computerName -Destination $exportPath -DriveLetter $DriveLetter
+        if ($result -and $result.StartsWith("Error")) {
+            Write-Host $result -ForegroundColor Red
+        } elseif ($result) {
+            Write-Host $result -ForegroundColor Green
+        }
+        }

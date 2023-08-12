@@ -1,10 +1,10 @@
-$remoteComputer = if ($comboBoxComputerName.SelectedItem) {
+$ComputerName = if ($comboBoxComputerName.SelectedItem) {
     $comboBoxComputerName.SelectedItem.ToString()
 } else {
     $comboBoxComputerName.Text
 }
 
-if (-not $remoteComputer) {
+if (-not $ComputerName) {
     [System.Windows.Forms.MessageBox]::Show("Please enter a remote computer name.")
     return
 }
@@ -44,12 +44,6 @@ Function Get-RemoteResources {
     try {
         $resources = @()
         Invoke-Command -ComputerName $computerName -ScriptBlock {
-            $drives = Get-PSDrive -PSProvider FileSystem | Select-Object -ExpandProperty Root
-            $drives
-        } | ForEach-Object {
-            $resources += $_
-        }
-        Invoke-Command -ComputerName $computerName -ScriptBlock {
             $shares = Get-CimInstance -ClassName Win32_Share | ForEach-Object {
                 "\\$using:computerName\$($_.Name)"
             }
@@ -65,12 +59,10 @@ Function Get-RemoteResources {
     }
 }
 
-
-$remoteComputer = ""
 $remoteRootPath = ""
 $script:currentPath = ""
 
-$remoteRootPath = "\\$remoteComputer\C$"
+$remoteRootPath = "\\$ComputerName\C$"
     $script:currentPath = $remoteRootPath
 
     $fileBrowserForm = New-Object System.Windows.Forms.Form
@@ -135,7 +127,7 @@ $remoteRootPath = "\\$remoteComputer\C$"
     Update-ListView -path $script:currentPath
     }) 
 
-    $drives = Get-RemoteResources -computerName $remoteComputer
+    $drives = Get-RemoteResources -computerName $ComputerName
     $driveComboBox.Items.Clear()
     $driveComboBox.Items.AddRange($drives)
 
@@ -148,3 +140,4 @@ $fileBrowserForm.Controls.Add($backButton)
 $fileBrowserForm.Controls.Add($listView)
 $fileBrowserForm.Add_Shown({ Update-ListView -path $remoteRootPath })
 $fileBrowserForm.ShowDialog()
+

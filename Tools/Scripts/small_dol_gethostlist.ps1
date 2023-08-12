@@ -1,4 +1,3 @@
-#Passed testing
 function Get-AllComputers {
     # Get a list of all domains in the forest
     $domains = (Get-ADForest).Domains

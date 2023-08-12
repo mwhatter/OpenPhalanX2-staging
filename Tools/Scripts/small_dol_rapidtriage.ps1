@@ -201,14 +201,22 @@ function Get_PrefetchMetadata {
     # Process the copied prefetch files with PECmd
     & $pecmdPath -d $copiedFilesPath --csv $csvOutputDir
 
+    # Create a variable to store the ExcelPackage
+    $ExcelPackage = $null
+
     # Collect the CSV results and import to the Excel workbook
     $csvFiles = Get-ChildItem -Path $csvOutputDir -Filter "*.csv" -File
     foreach ($csvFile in $csvFiles) {
         $csvData = Import-Csv -Path $csvFile.FullName
-        $csvData | Export-Excel -Path $ExcelFile -WorksheetName $csvFile.BaseName -AutoSize -AutoFilter -FreezeFirstColumn -BoldTopRow -FreezeTopRow -TableStyle Medium6
-    }
+        # Update this line to capture the ExcelPackage object
+        $ExcelPackage = $csvData | Export-Excel -Path $ExcelFile -WorksheetName $csvFile.BaseName -AutoSize -AutoFilter -FreezeFirstColumn -BoldTopRow -FreezeTopRow -TableStyle Medium6 -PassThru
+}
 
-    Remove-Item -Path $csvOutputDir -Force -Recurse
+    # Now close the ExcelPackage
+    if ($ExcelPackage) {
+        Close-ExcelPackage $ExcelPackage
+}
+    Remove-Item -Path $csvOutputDir -Recurse -Force
     $colprestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "Collected Prefetch from $ComputerName at $colprestart" -ForegroundColor Cyan 
     Log_Message -logfile $logfile -Message "Collected Prefetch from $ComputerName"

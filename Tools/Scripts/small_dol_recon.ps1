@@ -11,6 +11,19 @@ if (![string]::IsNullOrEmpty($computerName)) {
         $adEntry = Get-ADComputer -Filter "Name -eq '$computerName'" -Properties Name, DNSHostName, IPv4Address, Created, Description, DistinguishedName, Enabled, OperatingSystem, OperatingSystemVersion, SID
         $textboxResults.AppendText("Host AD Information: `r`n$( $adEntry | Out-String)")
 
+        # Fetch AD groups the computer is a member of
+        $computerGroups = Get-ADPrincipalGroupMembership -Identity $adEntry.DistinguishedName
+
+        # Format the group names as a bulleted list
+        $computerGroupNames = "- " + ($computerGroups.Name -join "`r`n- ")
+
+        # Count the number of groups
+        $groupCount = $computerGroups.Count
+
+        # Append the formatted output to the results with separators and a count for computer groups
+        $textboxResults.AppendText("Host $computerName is a member of $groupCount groups:`r`n$computerGroupNames`r`n")
+        $textboxResults.AppendText("======================================`r`n`r`n`r`n`r`n")
+
         # Enumerate all users known to the system
         $allUsers = Get-CimAssociatedInstance -CimInstance (Get-CimInstance -ClassName Win32_ComputerSystem -ComputerName $computerName) -ResultClassName Win32_UserAccount
 
@@ -23,6 +36,17 @@ if (![string]::IsNullOrEmpty($computerName)) {
             try {
                 $adUserEntry = Get-ADUser -Identity $user.Name -Properties SamAccountName, whenCreated, Description, Enabled, GivenName, Surname, DisplayName, EmailAddress
                 $textboxResults.AppendText("User AD Information for $($user.Name) `r`n$( $adUserEntry | Out-String)")
+
+                # Fetch AD groups the user is a member of
+                $userGroups = Get-ADPrincipalGroupMembership -Identity $user.Name
+                $userGroupNames = "- " + ($userGroups.Name -join "`r`n- ")
+
+                # Count the number of groups the user is a member of
+                $userGroupCount = $userGroups.Count
+
+                # Append the formatted output to the results for user groups
+                $textboxResults.AppendText("User $($user.Name) is a member of $userGroupCount groups:`r`n$userGroupNames`r`n")
+                $textboxResults.AppendText("`r`n======================================`r`n`r`n`r`n`r`n`r`n")
 
                 # Add user to combobox
                 $comboboxUsername.Items.Add($adUserEntry.SamAccountName)

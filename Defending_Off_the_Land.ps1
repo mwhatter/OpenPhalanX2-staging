@@ -372,10 +372,11 @@ $WinEventalyzerButton.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $WinEventalyzerButton.Add_Click({
     $statusLabel.Text = "Working..."
     try {
-        $scriptOutput = .\Tools\Scripts\small_dol_wineventalyzer.ps1
+        .\Tools\Scripts\small_dol_wineventalyzer.ps1
         $statusLabel.Text = "Done"
-        # Display the script's output for debugging purposes
-        Write-Host $scriptOutput
+        Log_Message -logfile $LogFile -Message "WinEventalyzed $computerName"
+        write-host "WinEventalyzer completed on $computerName" -ForegroundColor Green
+        $textboxWinEventalyzer.Text = "WinEventalyzer completed on $computerName"
     } catch {
         $statusLabel.Text = "Error"
         Write-Host $_.Exception.Message
@@ -390,7 +391,7 @@ $buttonProcAsso.Text = "ProcAsso"
 $buttonProcAsso.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonProcAsso.Add_Click({
     $statusLabel.Text = "Working..."
-    
+    & ".\Tools\Scripts\small_dol_procasso.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonProcAsso)
@@ -408,7 +409,9 @@ $buttonIsolateHost.Size = New-Object System.Drawing.Size(70, 40)
 $buttonIsolateHost.Text = "Engage"
 $buttonIsolateHost.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonIsolateHost.Add_Click({
-    
+    $statusLabel.Text = "Working..."
+    & ".\Tools\Scripts\small_dol_isolate.ps1"
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonIsolateHost)
 
@@ -418,7 +421,9 @@ $buttonUndoIsolation.Size = New-Object System.Drawing.Size(70, 40)
 $buttonUndoIsolation.Text = "Release"
 $buttonUndoIsolation.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonUndoIsolation.Add_Click({
-    
+    $statusLabel.Text = "Working..."
+    & ".\Tools\Scripts\small_dol_release.ps1"
+    $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonUndoIsolation)
 
@@ -429,7 +434,7 @@ $buttonInstallSysmon.Text = "Deploy Sysmon"
 $buttonInstallSysmon.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonInstallSysmon.Add_Click({
     $statusLabel.Text = "Working..."
-    
+    & ".\Tools\Scripts\small_dol_sysmon.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonInstallSysmon)
@@ -454,9 +459,7 @@ $buttonSelectRemoteFile.Text = "Browse Remote Files"
 $buttonSelectRemoteFile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonSelectRemoteFile.Size = New-Object System.Drawing.Size(80, 40)
 $buttonSelectRemoteFile.Location = New-Object System.Drawing.Point(245, 180)
-$buttonSelectRemoteFile.Add_Click({
-        
-})
+$buttonSelectRemoteFile.Add_Click({& ".\Tools\Scripts\small_dol_remotefilebrowse.ps1"})
 $form.Controls.Add($buttonSelectRemoteFile)
 
 $buttonCopyFile = New-Object System.Windows.Forms.Button
@@ -466,7 +469,7 @@ $buttonCopyFile.Text = "Copy"
 $buttonCopyFile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonCopyFile.Add_Click({
     $statusLabel.Text = "Working..."
-    
+    & ".\Tools\Scripts\small_dol_copy.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonCopyFile)
@@ -478,7 +481,7 @@ $buttonHuntFile.Text = "Hunt File"
 $buttonHuntFile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonHuntFile.Add_Click({
     $statusLabel.Text = "Working..."
-    
+    & ".\Tools\Scripts\small_dol_hunt.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonHuntFile)
@@ -490,7 +493,7 @@ $buttonDeleteFile.Text = "Delete"
 $buttonDeleteFile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonDeleteFile.Add_Click({
     $statusLabel.Text = "Working..."
-    
+    & ".\Tools\Scripts\small_dol_delete.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonDeleteFile)
@@ -544,7 +547,7 @@ $buttonRetrieveReport.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonRetrieveReport.Enabled = $false
 $buttonRetrieveReport.Add_Click({
     $statusLabel.Text = "Working..."
-    
+    & ".\Tools\Scripts\small_dol_urlscanreport.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonRetrieveReport)
@@ -563,6 +566,7 @@ $comboboxlocalFilePath.BackColor = [System.Drawing.Color]::Black
 $comboboxlocalFilePath.ForeColor = [System.Drawing.Color]::lightseagreen
 $comboboxlocalFilePath.DrawMode = [System.Windows.Forms.DrawMode]::OwnerDrawFixed
 $comboboxlocalFilePath.Anchor = [System.Windows.Forms.AnchorStyles]::Top
+$toolTip = New-Object System.Windows.Forms.ToolTip
 $comboboxlocalFilePath.add_DrawItem({
     param($senderloc, $e)
     $e.DrawBackground()
@@ -570,6 +574,24 @@ $comboboxlocalFilePath.add_DrawItem({
     $textFormatFlags = [System.Windows.Forms.TextFormatFlags]::Right
     [System.Windows.Forms.TextRenderer]::DrawText($e.Graphics, $text, $e.Font, $e.Bounds, $e.ForeColor, $textFormatFlags)
     $e.DrawFocusRectangle()
+})
+$comboboxlocalFilePath.add_MouseEnter({
+    # Show the tooltip for the currently selected item
+    if ($comboboxlocalFilePath.SelectedItem) {
+        $toolTip.SetToolTip($comboboxlocalFilePath, $comboboxlocalFilePath.SelectedItem.ToString())
+    } else {
+        # Clear the tooltip if no item is selected
+        $toolTip.SetToolTip($comboboxlocalFilePath, "")
+    }
+})
+$comboboxlocalFilePath.add_SelectedIndexChanged({
+    # Update the tooltip for the newly selected item
+    if ($comboboxlocalFilePath.SelectedItem) {
+        $toolTip.SetToolTip($comboboxlocalFilePath, $comboboxlocalFilePath.SelectedItem.ToString())
+    } else {
+        # Clear the tooltip if no item is selected
+        $toolTip.SetToolTip($comboboxlocalFilePath, "")
+    }
 })
 $form.Controls.Add($comboboxlocalFilePath)
 
@@ -581,7 +603,6 @@ $buttonSelectLocalFile.Location = New-Object System.Drawing.Point(245, 270)
 $buttonSelectLocalFile.Add_Click({
     $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
     $openFileDialog.Filter = "All files (*.*)|*.*"
-
     if ($openFileDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
         $selectedFile = $openFileDialog.FileName
         $comboboxlocalFilePath.Text = $selectedFile
@@ -594,9 +615,7 @@ $buttonListCopiedFiles.Location = New-Object System.Drawing.Point(330, 270)
 $buttonListCopiedFiles.Size = New-Object System.Drawing.Size(75, 40)
 $buttonListCopiedFiles.Text = "View Copied Files"
 $buttonListCopiedFiles.Anchor = [System.Windows.Forms.AnchorStyles]::Top
-$buttonListCopiedFiles.Add_Click({
-    
-})
+$buttonListCopiedFiles.Add_Click({& ".\Tools\Scripts\small_dol_listcopied.ps1"})
 $form.Controls.Add($buttonListCopiedFiles)
 
 $submitfileButton = New-Object System.Windows.Forms.Button
@@ -620,7 +639,7 @@ $buttonRetrieveReportfile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonRetrieveReportfile.Enabled = $false
 $buttonRetrieveReportfile.Add_Click({
     $statusLabel.Text = "Working..."
-    
+    & ".\Tools\Scripts\small_dol_getfilescan.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonRetrieveReportfile)
@@ -645,9 +664,7 @@ $buttonPWChange.Location = New-Object System.Drawing.Point(15, 310)
 $buttonPWChange.Size = New-Object System.Drawing.Size(55,40)
 $buttonPWChange.Text = 'PW Reset'
 $buttonPWChange.Anchor = [System.Windows.Forms.AnchorStyles]::Top
-$buttonPWChange.Add_Click({
-    
-})
+$buttonPWChange.Add_Click({& ".\Tools\Scripts\small_dol_pwchange.ps1"})
 $form.Controls.Add($buttonPWChange)
 
 $buttonLogOff = New-Object System.Windows.Forms.Button
@@ -655,9 +672,7 @@ $buttonLogOff.Location = New-Object System.Drawing.Point(70, 310)
 $buttonLogOff.Size = New-Object System.Drawing.Size(55, 40)
 $buttonLogOff.Text = "Logoff"
 $buttonLogOff.Anchor = [System.Windows.Forms.AnchorStyles]::Top
-$buttonLogOff.Add_Click({
-    
-})
+$buttonLogOff.Add_Click({& ".\Tools\Scripts\small_dol_logoff.ps1"})
 $form.Controls.Add($buttonLogOff)
 
 $buttonDisableAcc = New-Object System.Windows.Forms.Button
@@ -665,9 +680,7 @@ $buttonDisableAcc.Location = New-Object System.Drawing.Point(125, 310)
 $buttonDisableAcc.Size = New-Object System.Drawing.Size(55, 40)
 $buttonDisableAcc.Text = "Disable"
 $buttonDisableAcc.Anchor = [System.Windows.Forms.AnchorStyles]::Top
-$buttonDisableAcc.Add_Click({
-    
-})
+$buttonDisableAcc.Add_Click({& ".\Tools\Scripts\small_dol_disableacc.ps1"})
 $form.Controls.Add($buttonDisableAcc)
 
 $buttonEnableAcc = New-Object System.Windows.Forms.Button
@@ -675,9 +688,7 @@ $buttonEnableAcc.Location = New-Object System.Drawing.Point(180, 310)
 $buttonEnableAcc.Size = New-Object System.Drawing.Size(50, 40)
 $buttonEnableAcc.Text = "Enable"
 $buttonEnableAcc.Anchor = [System.Windows.Forms.AnchorStyles]::Top
-$buttonEnableAcc.Add_Click({
-    
-})
+$buttonEnableAcc.Add_Click({& ".\Tools\Scripts\small_dol_enableacc.ps1"})
 $form.Controls.Add($buttonEnableAcc)
 
 $textboxaddargs = New-Object System.Windows.Forms.TextBox
@@ -702,7 +713,7 @@ $UsnJrnlButton.Text = 'USN Jrnl Collection'
 $UsnJrnlButton.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $UsnJrnlButton.Add_Click({
     $statusLabel.Text = "Working..."
-
+    & ".\Tools\Scripts\small_dol_usnjrnl.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($UsnJrnlButton)
@@ -727,7 +738,7 @@ $buttonIntelligizer.Text = "Intelligazer"
 $buttonIntelligizer.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonIntelligizer.Add_Click({
     $statusLabel.Text = "Working..."
-
+    & ".\Tools\Scripts\small_dol_intelligazer.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonIntelligizer)
@@ -737,9 +748,7 @@ $buttonPlaceFile.Location = New-Object System.Drawing.Point(330, 355)
 $buttonPlaceFile.Size = New-Object System.Drawing.Size(75, 40)
 $buttonPlaceFile.Text = "Place File"
 $buttonPlaceFile.Anchor = [System.Windows.Forms.AnchorStyles]::Top
-$buttonPlaceFile.Add_Click({
-    
-})
+$buttonPlaceFile.Add_Click({& ".\Tools\Scripts\small_dol_place.ps1"})
 $form.Controls.Add($buttonPlaceFile)
 
 $buttonPlaceAndRun = New-Object System.Windows.Forms.Button
@@ -749,7 +758,7 @@ $buttonPlaceAndRun.Text = "Place and Run"
 $buttonPlaceAndRun.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonPlaceAndRun.Add_Click({
     $statusLabel.Text = "Working..."
-
+    & ".\Tools\Scripts\small_dol_placerun.ps1"
     $statusLabel.Text = "Done"
 })
 $form.Controls.Add($buttonPlaceAndRun)
@@ -826,4 +835,4 @@ $Form.Add_FormClosing({
     Log_Message -Message "Your session ended at $ScriptEndTime" -LogFile $LogFile
     $textboxResults.AppendText("Your session ended at $ScriptEndTime")
 })
-$result = $Form.ShowDialog()
+$Form.ShowDialog()

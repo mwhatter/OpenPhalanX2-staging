@@ -11,12 +11,9 @@ $computerName = if ($comboBoxComputerName.SelectedItem) {
 
 Invoke-Command -ComputerName $computerName -ScriptBlock {
     $username = $args[0]
-    $userSessions = (Get-CimInstance -ClassName Win32_ComputerSystem).UserName
-    foreach ($userSession in $userSessions) {
-        if ($userSession -eq $username) {
-            # Using shutdown to log off the user
-            shutdown /l
-        }
+    $sessions = query user | Where-Object { $_ -match "\s+(\d+)\s+($username)" } | ForEach-Object { if ($matches[1]) { $matches[1] } }
+    foreach ($sessionId in $sessions) {
+        logoff $sessionId
     }
 } -ArgumentList $selectedUser
 

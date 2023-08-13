@@ -76,8 +76,8 @@ function Process_Hayabusa {
     )
     New-Item -Path "$exportPath\$ComputerName" -ItemType Directory -Force | Out-Null
     New-Item -Path "$exportPath\$ComputerName\Hayabusa" -ItemType Directory -Force | Out-Null  
-    $hayabusaPath = ".\Tools\Hayabusa\hayabusa.exe"
-
+    $hayabusaPath = ".\hayabusa.exe"
+    set-location .\Tools\Hayabusa\
     & $hayabusaPath logon-summary -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\logon-summary.csv" | Out-Null
     & $hayabusaPath metrics -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\metrics.csv" | Out-Null
     & $hayabusaPath pivot-keywords-list -d "$EVTXPath\$ComputerName" -o "$exportPath\$ComputerName\Hayabusa\pivot-keywords-list.csv" | Out-Null
@@ -85,6 +85,7 @@ function Process_Hayabusa {
     $colhayastart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "Hayabusa analyzed logs from $ComputerName at $colhayastart" -ForegroundColor Cyan 
     $textboxResults.AppendText("Hayabusa analyzed logs from $ComputerName at $colhayastart `r`n")
+    set-location ..\..
 }
 
 function Process_DeepBlueCLI {

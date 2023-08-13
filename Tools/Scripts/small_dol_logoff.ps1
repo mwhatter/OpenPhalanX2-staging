@@ -1,5 +1,5 @@
 $selectedUser = if ($comboboxUsername.SelectedItem) {
-    $comboboxUsername.SelectedItem.ToString().split('\')[-1]  # Extract username without domain
+    $comboboxUsername.SelectedItem.ToString()
 } else {
     $comboboxUsername.Text
 }
@@ -11,11 +11,11 @@ $computerName = if ($comboBoxComputerName.SelectedItem) {
 
 Invoke-Command -ComputerName $computerName -ScriptBlock {
     $username = $args[0]
-    $sessions = query user 2>&1
-    foreach ($session in $sessions) {
-        if ($session -match "^\s*(\d+)\s+($username)\s+") {
-            $sessionId = $matches[1]
-            logoff $sessionId
+    $userSessions = (Get-CimInstance -ClassName Win32_ComputerSystem).UserName
+    foreach ($userSession in $userSessions) {
+        if ($userSession -eq $username) {
+            # Using shutdown to log off the user
+            shutdown /l
         }
     }
 } -ArgumentList $selectedUser

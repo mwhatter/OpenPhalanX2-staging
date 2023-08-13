@@ -23,7 +23,10 @@ if ($sessionData) {
     Invoke-Command -ComputerName $computerName -ScriptBlock {
         & logoff $args[0]
     } -ArgumentList $sessionData
-    Write-Host "$selectedUser has been logged off from $computerName"
+    $logofftime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "$selectedUser has been logged off from $computerName at $logofftime"
+    $textboxResults.AppendText("$selectedUser has been logged off from $computerName at $logofftime`r`n")
+    Log_Message -logfile $logfile -Message "$selectedUser has been logged off from $computerName"
 } else {
     Write-Host "Could not find session ID for user $selectedUser on $computerName"
 }

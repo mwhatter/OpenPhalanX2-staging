@@ -11,11 +11,11 @@ $computerName = if ($comboBoxComputerName.SelectedItem) {
 
 Invoke-Command -ComputerName $computerName -ScriptBlock {
     $username = $args[0]
-    $sessions = query user 2>&1  # Get list of user sessions
+    $sessions = quser 2>&1  # Get list of user sessions
     foreach ($session in $sessions) {
         if ($session -match "^\s*(\d+)\s+($username)\s+") {
             $sessionId = $matches[1]
-            logoff $sessionId  # Log off the user
+            logoff $sessionId /V /F  # Log off the user with verbose and force options
         }
     }
 } -ArgumentList $selectedUser

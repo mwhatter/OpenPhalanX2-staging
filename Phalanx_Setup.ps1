@@ -19,6 +19,20 @@ $directories = @(
 
 $errors = @()
 
+# Unblock all files in .\Tools\Scripts directory recursively
+Get-ChildItem -Path ".\Tools\Scripts" -Recurse | ForEach-Object {
+    if ($_.Attributes -ne "Directory") {
+        Unblock-File -Path $_.FullName
+    }
+}
+
+# Unblock all files in .\Tools\Scripts\Integrations\Stored directory recursively
+Get-ChildItem -Path ".\Tools\Scripts\Integrations\Stored" -Recurse | ForEach-Object {
+    if ($_.Attributes -ne "Directory") {
+        Unblock-File -Path $_.FullName
+    }
+}
+
 ################## Workspace ##################
 foreach ($directory in $directories) {
     try {

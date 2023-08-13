@@ -378,18 +378,20 @@ $WinEventalyzerButton.Text = 'Win-Eventalyzer'
 $WinEventalyzerButton.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $WinEventalyzerButton.Add_Click({
     $statusLabel.Text = "Working..."
+    $computerName = if ($comboBoxComputerName.SelectedItem) {$comboBoxComputerName.SelectedItem.ToString()} else {$comboBoxComputerName.Text}
     try {
         .\Tools\Scripts\small_dol_wineventalyzer.ps1
         $statusLabel.Text = "Done"
         Log_Message -logfile $LogFile -Message "WinEventalyzed $computerName"
         write-host "WinEventalyzer completed on $computerName" -ForegroundColor Green
-        $textboxWinEventalyzer.Text = "WinEventalyzer completed on $computerName"
+        $textboxResults.AppendText("WinEventalyzer completed on $computerName")
     } catch {
         $statusLabel.Text = "Error"
         Write-Host $_.Exception.Message
     }
 })
 $form.Controls.Add($WinEventalyzerButton)
+
 
 $buttonProcAsso = New-Object System.Windows.Forms.Button
 $buttonProcAsso.Location = New-Object System.Drawing.Point(475, 100)
@@ -732,7 +734,7 @@ $buttonBoxEmAll.Text = "BoxEmAll"
 $buttonBoxEmAll.Anchor = [System.Windows.Forms.AnchorStyles]::Top
 $buttonBoxEmAll.Add_Click({
     $statusLabel.Text = "Working..."
-    $output = & ".\Tools\Scripts\box_em_all.ps1"
+    $output = & ".\Tools\Scripts\small_dol_boxemall.ps1"
     $textboxResults.AppendText($output)
     $statusLabel.Text = "Done"
 })
@@ -793,7 +795,7 @@ $buttonReset.Location = New-Object System.Drawing.Point(245, 370)
 $buttonReset.Size = New-Object System.Drawing.Size(80, 23)
 $buttonReset.Text = "Reset"
 $buttonReset.Anchor = [System.Windows.Forms.AnchorStyles]::Top
-$buttonReset.Add_Click({& ".\Tools\Scripts\small_dol_resetform.ps1"})
+$buttonReset.Add_Click({& ".\Tools\Scripts\small_dol_resetform.ps1" -ScriptStartTime $ScriptStartTime})
 $form.Controls.Add($buttonReset)
 
 $tooltip = New-Object System.Windows.Forms.ToolTip

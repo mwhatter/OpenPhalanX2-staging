@@ -3,6 +3,7 @@ Run this script first. It downloads and installs a variety of security tools, in
 DeepBlueCLI, Hayabusa, Sysmon, Eric Zimmerman's tools. You'll also get directories built to manage 
 tools, their respective files, and outputs for the many funcitons of OpenPhalanX.
 #>
+Add-Type -AssemblyName System.Windows.Forms
 
 $directories = @(
     ".\CopiedFiles",

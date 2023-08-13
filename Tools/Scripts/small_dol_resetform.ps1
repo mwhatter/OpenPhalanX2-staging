@@ -1,7 +1,12 @@
+param (
+        $ScriptStartTime
+    )
+
 function Reset-Form {
     $statusLabel.Text = ""
     $textboxURL.Clear()
     $textboxResults.Clear()
+    $textboxResults.Text = "Session started at $ScriptStartTime `r`n"
     $buttonSubmitUrl.Enabled = $true
     $buttonRetrieveReport.Enabled = $false
     $buttonSubmitUrl.Enabled = $true
@@ -18,6 +23,9 @@ function Reset-Form {
     $dropdownProcessId.Text = ""
     $script:SubmissionId = ""
     $script:SubmissionId = ""
+    $comboboxUsername.Items.Clear()
+    $comboboxUsername.SelectedIndex = -1 
+    $comboboxUsername.Text = ""
 }
 
 Reset-Form

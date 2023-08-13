@@ -1,5 +1,5 @@
 #Aligned and ready for testing
-$directoryForScanning = "./Integrations/Inuse"
+$directoryForScanning = ".\Tools\Scripts\Integrations\Inuse"
 $directoryPath = ".\CopiedFiles"
 $pythonExe = "python"
 

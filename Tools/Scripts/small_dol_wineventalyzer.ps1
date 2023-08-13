@@ -23,7 +23,7 @@ function Export_AllLogs {
     if(Test-Path $localLogPath){
         $files = Get-ChildItem -Path $localLogPath -File
         $fileCount = $files.Count
-        Write-Host "There are $fileCount files in the $localLogPath directory." -ForegroundColor Cyan
+        Write-Host "There are $fileCount files already in the $localLogPath directory." -ForegroundColor Cyan
         
         $userInput = [System.Windows.Forms.MessageBox]::Show("There are $fileCount files in the directory. Do you want to overwrite the logs?", "Confirm", [System.Windows.Forms.MessageBoxButtons]::YesNoCancel)
         if ($userInput -eq 'No') { 
@@ -32,6 +32,11 @@ function Export_AllLogs {
             return 
         }
         if ($userInput -eq 'Cancel') { exit }
+        else { 
+            Remove-Item -Path $localLogPath -Recurse -Force
+            Write-Host "Overwriting $fileCount logs." -ForegroundColor Cyan 
+            $textboxResults.AppendText("Overwriting $fileCount logs. `r`n")
+        }
     }
 
     # Get remote drive letters
@@ -124,3 +129,4 @@ function Get_RemoteDriveLetters {
 Export_AllLogs -EVTXPath $EVTXPath -ComputerName $ComputerName
 Process_Hayabusa -ComputerName $ComputerName
 Process_DeepBlueCLI -ComputerName $ComputerName
+

@@ -1,6 +1,6 @@
 <#
 Run this script first. It downloads and installs a variety of security tools, including 
-DeepBlueCLI, Hayabusa, Sysmon, Eric Zimmerman's tools. You'll also get directories built 
+DeepBlueCLI, Hayabusa, Sysmon, and Eric Zimmerman's tools. You'll also get directories built 
 to manage tools, their respective files, and outputs for the many funcitons of OpenPhalanX.
 #>
 

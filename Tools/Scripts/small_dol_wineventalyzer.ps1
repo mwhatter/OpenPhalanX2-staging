@@ -33,7 +33,6 @@ function Export_AllLogs {
         }
         if ($userInput -eq 'Cancel') { exit }
         else { 
-            Remove-Item -Path $localLogPath -Recurse -Force
             Write-Host "Overwriting $fileCount logs." -ForegroundColor Cyan 
             $textboxResults.AppendText("Overwriting $fileCount logs. `r`n")
         }

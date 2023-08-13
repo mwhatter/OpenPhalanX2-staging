@@ -1,10 +1,7 @@
 <#
-This script downloads and installs a variety of security tools, including PowerShell 7, 
-the vmray-rest-api Python module, DeepBlueCLI, Hayabusa, Sysmon, and the Get-ZimmermanTools 
-script. It also creates a set of directories to store the tools and their associated files.
-
-The script also writes the success or failure of each action to the console. This makes it 
-easier to track the progress of the script and troubleshoot any errors that may occur.
+Run this script first. It downloads and installs a variety of security tools, including PowerShell 7, 
+DeepBlueCLI, Hayabusa, Sysmon, Eric Zimmerman's tools. You'll also get directories built to manage 
+tools, their respective files, and outputs for the many funcitons of OpenPhalanX.
 #>
 
 $directories = @(

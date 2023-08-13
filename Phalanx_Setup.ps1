@@ -50,36 +50,40 @@ try {
     }
 }
 
-# Python
-$downloadUrl = "https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe"
-$installerPath = Join-Path -Path c:\Test -ChildPath "python_installer.exe"
+function PromptForInstallation($appName) {
+    $messageBoxResult = [System.Windows.Forms.MessageBox]::Show("Do you want to download and install $appName?", "Install $appName", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+    return $messageBoxResult -eq 'Yes'
+}
 
-try {
-    Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath
-    Start-Process -FilePath $installerPath -ArgumentList "/quiet", "TargetDir=C:\Python", "AddToPath=1", "AssociateFiles=1", "Shortcuts=1" -Wait
-    Remove-Item -Path $installerPath
-    Write-Host "Python installed successfully."
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Installing Python"
-        Error = $_.Exception.Message
+# Python
+if (PromptForInstallation("Python")) {
+    $downloadUrl = "https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe"
+    $installerPath = Join-Path -Path c:\Test -ChildPath "python_installer.exe"
+
+    try {
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath
+        Start-Process -FilePath $installerPath -ArgumentList "/quiet", "TargetDir=C:\Python", "AddToPath=1", "AssociateFiles=1", "Shortcuts=1" -Wait
+        Remove-Item -Path $installerPath
+        Write-Host "Python installed successfully."
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Installing Python"
+            Error = $_.Exception.Message
+        }
     }
 }
 
 # numscrypt Python module
-try {
-    Start-Process -FilePath python.exe -ArgumentList "-m pip install numscrypt" -Wait
-    Write-Host "numscrypt Python module installed successfully."
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Installing numscrypt Python module"
-        Error = $_.Exception.Message
+if (PromptForInstallation("numscrypt Python module")) {
+    try {
+        Start-Process -FilePath python.exe -ArgumentList "-m pip install numscrypt" -Wait
+        Write-Host "numscrypt Python module installed successfully."
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Installing numscrypt Python module"
+            Error = $_.Exception.Message
+        }
     }
-}
-
-function PromptForInstallation($appName) {
-    $messageBoxResult = [System.Windows.Forms.MessageBox]::Show("Do you want to download and install $appName?", "Install $appName", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
-    return $messageBoxResult -eq 'Yes'
 }
 
 # DeepBlueCLI

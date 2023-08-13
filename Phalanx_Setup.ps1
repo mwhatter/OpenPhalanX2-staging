@@ -10,7 +10,6 @@ $directories = @(
     ".\Logs\EVTX",
     ".\Logs\Reports",
     ".\Logs\Audit",
-    ".\Tools",
     ".\Tools\Hayabusa",
     ".\Tools\Sysmon",
     ".\Tools\EZTools"
@@ -77,79 +76,77 @@ try {
     }
 }
 
-# vmray-rest-api Python module
-try {
-    Start-Process -FilePath python.exe -ArgumentList "-m pip install vmray-rest-api" -Wait
-    Write-Host "vmray-rest-api Python module installed successfully."
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Installing vmray-rest-api Python module"
-        Error = $_.Exception.Message
-    }
+function PromptForInstallation($appName) {
+    $messageBoxResult = [System.Windows.Forms.MessageBox]::Show("Do you want to download and install $appName?", "Install $appName", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+    return $messageBoxResult -eq 'Yes'
 }
 
 # DeepBlueCLI
-try {
-    $deepBlueCLIZip = Invoke-WebRequest -URI "https://github.com/sans-blue-team/DeepBlueCLI/archive/refs/heads/master.zip" -OutFile "DeepBlueCLI.zip"
-    Expand-Archive "DeepBlueCLI.zip" -DestinationPath ".\Tools\" -Force
-    Remove-Item "DeepBlueCLI.zip"
-    if (Test-Path .\Tools\DeepBlueCLI) {
-        Remove-Item .\Tools\DeepBlueCLI -Recurse -Force
-    }
-    Rename-Item .\Tools\DeepBlueCLI-master -NewName DeepBlueCLI -Force | Out-Null
-    Write-Host "DeepBlueCLI installed successfully."
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Installing DeepBlueCLI"
-        Error = $_.Exception.Message
+if (PromptForInstallation("DeepBlueCLI")) {
+    try {
+        $deepBlueCLIZip = Invoke-WebRequest -URI "https://github.com/sans-blue-team/DeepBlueCLI/archive/refs/heads/master.zip" -OutFile "DeepBlueCLI.zip"
+        Expand-Archive "DeepBlueCLI.zip" -DestinationPath ".\Tools\" -Force
+        Remove-Item "DeepBlueCLI.zip"
+        if (Test-Path .\Tools\DeepBlueCLI) {
+            Remove-Item .\Tools\DeepBlueCLI -Recurse -Force
+        }
+        Rename-Item .\Tools\DeepBlueCLI-master -NewName DeepBlueCLI -Force | Out-Null
+        Write-Host "DeepBlueCLI installed successfully."
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Installing DeepBlueCLI"
+            Error = $_.Exception.Message
+        }
     }
 }
 
 # Hayabusa
-$hayabusaApiUrl = "https://api.github.com/repos/Yamato-Security/hayabusa/releases/latest"
-$hayabusaReleaseData = Invoke-RestMethod -Uri $hayabusaApiUrl
-$hayabusaDownloadUrl = $hayabusaReleaseData.assets | Where-Object { $_.browser_download_url -like "*-win-64-bit.zip" } | Select-Object -First 1 -ExpandProperty browser_download_url
-$hayabusaZipPath = Join-Path -Path ".\Tools" -ChildPath "hayabusa-win-x64.zip"
-$hayabusaExtractPath = ".\Tools\Hayabusa"
+if (PromptForInstallation("Hayabusa")) {
+    $hayabusaApiUrl = "https://api.github.com/repos/Yamato-Security/hayabusa/releases/latest"
+    $hayabusaReleaseData = Invoke-RestMethod -Uri $hayabusaApiUrl
+    $hayabusaDownloadUrl = $hayabusaReleaseData.assets | Where-Object { $_.browser_download_url -like "*-win-64-bit.zip" } | Select-Object -First 1 -ExpandProperty browser_download_url
+    $hayabusaZipPath = Join-Path -Path ".\Tools" -ChildPath "hayabusa-win-x64.zip"
+    $hayabusaExtractPath = ".\Tools\Hayabusa"
 
-# Download Hayabusa
-try {
-    Invoke-WebRequest -Uri $hayabusaDownloadUrl -OutFile $hayabusaZipPath
-    Write-Host "Hayabusa downloaded successfully."
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Downloading Hayabusa"
-        Error = $_.Exception.Message
+    # Download Hayabusa
+    try {
+        Invoke-WebRequest -Uri $hayabusaDownloadUrl -OutFile $hayabusaZipPath
+        Write-Host "Hayabusa downloaded successfully."
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Downloading Hayabusa"
+            Error = $_.Exception.Message
+        }
     }
-}
 
-# Extract Hayabusa
-try {
-    Expand-Archive -Path $hayabusaZipPath -DestinationPath $hayabusaExtractPath -Force
-    Write-Host "Hayabusa extracted successfully."
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Extracting Hayabusa"
-        Error = $_.Exception.Message
+    # Extract Hayabusa
+    try {
+        Expand-Archive -Path $hayabusaZipPath -DestinationPath $hayabusaExtractPath -Force
+        Write-Host "Hayabusa extracted successfully."
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Extracting Hayabusa"
+            Error = $_.Exception.Message
+        }
     }
-}
 
-# Rename Hayabusa executable
-$hayabusaExecutable = Get-ChildItem -Path $hayabusaExtractPath -Filter "hayabusa-*" -Recurse -File | Select-Object -First 1
-$hayabusaExecutable | Rename-Item -NewName "hayabusa.exe" -Force | Out-Null
+    # Rename Hayabusa executable
+    $hayabusaExecutable = Get-ChildItem -Path $hayabusaExtractPath -Filter "hayabusa-*" -Recurse -File | Select-Object -First 1
+    $hayabusaExecutable | Rename-Item -NewName "hayabusa.exe" -Force | Out-Null
 
-# Update Hayabusa rules
-$rulesPath = ".Tools\Hayabusa\Rules"
-$hayabusaExecutablePath = Join-Path -Path $hayabusaExtractPath -ChildPath "hayabusa.exe"
+    # Update Hayabusa rules
+    $rulesPath = ".Tools\Hayabusa\Rules"
+    $hayabusaExecutablePath = Join-Path -Path $hayabusaExtractPath -ChildPath "hayabusa.exe"
 
-try {
-    & $hayabusaExecutablePath update-rules -r $rulesPath | Out-Null
-    Write-Host "Hayabusa rules updated successfully."
-    Remove-Item -Path $hayabusaZipPath -Force
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Updating Hayabusa rules"
-        Error = $_.Exception.Message
+    try {
+        & $hayabusaExecutablePath update-rules -r $rulesPath | Out-Null
+        Write-Host "Hayabusa rules updated successfully."
+        Remove-Item -Path $hayabusaZipPath -Force
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Updating Hayabusa rules"
+            Error = $_.Exception.Message
+        }
     }
 }
 
@@ -174,16 +171,17 @@ try {
 }
 
 # Get-ZimmermanTools
-$zimmermanToolsZip = Invoke-WebRequest -URI "https://raw.githubusercontent.com/EricZimmerman/Get-ZimmermanTools/master/Get-ZimmermanTools.ps1" -OutFile ".\Tools\EZTools\Get-ZimmermanTools.ps1"
-
-try {
-    unblock-file ".\Tools\EZTools\Get-ZimmermanTools.ps1"
-    .\Tools\EZTools\Get-ZimmermanTools.ps1 -Dest ".\Tools\EZTools" -NetVersion 4 -Verbose:$false *> $null
-    Write-Host "Get-ZimmermanTools installed successfully."
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Installing Get-ZimmermanTools"
-        Error = $_.Exception.Message
+if (PromptForInstallation("Get-ZimmermanTools")) {
+    $zimmermanToolsZip = Invoke-WebRequest -URI "https://raw.githubusercontent.com/EricZimmerman/Get-ZimmermanTools/master/Get-ZimmermanTools.ps1" -OutFile ".\Tools\EZTools\Get-ZimmermanTools.ps1"
+    try {
+        unblock-file ".\Tools\EZTools\Get-ZimmermanTools.ps1"
+        .\Tools\EZTools\Get-ZimmermanTools.ps1 -Dest ".\Tools\EZTools" -NetVersion 4 -Verbose:$false *> $null
+        Write-Host "Get-ZimmermanTools installed successfully."
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Installing Get-ZimmermanTools"
+            Error = $_.Exception.Message
+        }
     }
 }
 

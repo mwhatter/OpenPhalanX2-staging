@@ -65,22 +65,21 @@ if (PromptForInstallation("Python")) {
         Start-Process -FilePath $installerPath -ArgumentList "/quiet", "TargetDir=C:\Python", "AddToPath=1", "AssociateFiles=1", "Shortcuts=1" -Wait
         Remove-Item -Path $installerPath
         Write-Host "Python installed successfully."
+        
+        # Install numscrypt Python module after successfully installing Python
+        try {
+            Start-Process -FilePath python.exe -ArgumentList "-m pip install numscrypt" -Wait
+            Write-Host "numscrypt Python module installed successfully."
+        } catch {
+            $errors += [PSCustomObject]@{
+                Step  = "Installing numscrypt Python module"
+                Error = $_.Exception.Message
+            }
+        }
+
     } catch {
         $errors += [PSCustomObject]@{
             Step  = "Installing Python"
-            Error = $_.Exception.Message
-        }
-    }
-}
-
-# numscrypt Python module
-if (PromptForInstallation("numscrypt Python module")) {
-    try {
-        Start-Process -FilePath python.exe -ArgumentList "-m pip install numscrypt" -Wait
-        Write-Host "numscrypt Python module installed successfully."
-    } catch {
-        $errors += [PSCustomObject]@{
-            Step  = "Installing numscrypt Python module"
             Error = $_.Exception.Message
         }
     }

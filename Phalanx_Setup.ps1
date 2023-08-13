@@ -19,6 +19,10 @@ $directories = @(
 
 $errors = @()
 
+unblock-file Defending_Off_the_land.ps1
+
+unblock-file API_Setup.ps1.ps1
+
 # Unblock all files in .\Tools\Scripts directory recursively
 Get-ChildItem -Path ".\Tools\Scripts" -Recurse | ForEach-Object {
     if ($_.Attributes -ne "Directory") {

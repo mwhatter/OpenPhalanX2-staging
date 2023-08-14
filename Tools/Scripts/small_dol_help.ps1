@@ -3,13 +3,13 @@ function Show-ColoredMessage {
 
     $form = New-Object System.Windows.Forms.Form
     $form.Text = $title
-    $form.Size = New-Object System.Drawing.Size(980, 600)
+    $form.Size = New-Object System.Drawing.Size(910, 600)
     $form.StartPosition = 'CenterScreen'
     $form.BackColor = [System.Drawing.Color]::Black
     $form.ForeColor = [System.Drawing.Color]::lightseagreen
 
     $panel = New-Object System.Windows.Forms.Panel
-    $panel.Size = New-Object System.Drawing.Size(950, 500) 
+    $panel.Size = New-Object System.Drawing.Size(880, 500) 
     $panel.Location = New-Object System.Drawing.Point(10, 10)
     $panel.AutoScroll = $true
 
@@ -100,9 +100,9 @@ $helpText = @"
 
     RapidTriage Button:
 
-    This button runs the RapidTriage tool, which collects a wide range of data from the remote host and outputs it 
-    in an xlsx workbook. The workbook includes several worksheets with different types of data, such as running 
-    processes, network connections, and more.
+    This button runs the RapidTriage tool, which collects a wide range of data from the remote host and outputs 
+    it in an xlsx workbook. The workbook includes several worksheets with different types of data, such as 
+    running processes, network connections, and more.
 
 
     View Copied Files Button:
@@ -125,8 +125,8 @@ $helpText = @"
 
     Retrieve Report Button:
 
-    This button retrieves the report of the analysis of the submitted URL. The report includes detailed information 
-    about the URL, such as its threat score, threat level, and more.
+    This button retrieves the report of the analysis of the submitted URL. The report includes detailed 
+    information about the URL, such as its threat score, threat level, and more.
 
 
     Sandbox Local File Button:
@@ -137,89 +137,90 @@ $helpText = @"
 
     Retrieve Report (File) Button:
 
-    This button retrieves the report of the analysis of the submitted file. The report includes detailed information 
-    about the file, such as its threat score, threat level, and more.
+    This button retrieves the report of the analysis of the submitted file. The report includes detailed 
+    information about the file, such as its threat score, threat level, and more.
 
 
     WinEventalyzer Button:
 
-    This button runs the WinEventalyzer tool, which collects Windows event logs from the remote host and analyzes them 
-    using several threat hunting tools, including DeepBlueCLI, and Hayabusa. The output includes timelines, 
-    summaries, and metrics that can be used for threat hunting.
+    This button runs the WinEventalyzer tool, which collects Windows event logs from the remote host and analyzes 
+    them using several threat hunting tools, including DeepBlueCLI, and Hayabusa. The output includes timelines, 
+    summaries, and metrics that can be used for investigative leads.
 
     
     USN Journal Button:
 
-    This button retrieves the USN Journal from the remote host. The USN Journal is a log of all changes to files on the 
-    remote host and can be used for forensic analysis.
+    This button retrieves the USN Journal from the remote host. The USN Journal is a log of all changes to files 
+    on the remote host and can be used for forensic analysis.
 
 
     List Copied Files Button:
 
-    This button lists all the files that have been copied from the remote host to the "OpenPhalanx\CopiedFiles" directory 
-    on your local host. The list is displayed in the lower display box, and the "Local File Path" dropdown is populated 
-    with the copied files.
+    This button lists all the files that have been copied from the remote host to the "OpenPhalanx\CopiedFiles" 
+    directory on your local host. The list is displayed in the lower display box, and the "Local File Path" 
+    dropdown is populated with the copied files.
 
 
     Select Remote File Button:
 
-    This button opens a custom remote file system explorer. You can navigate through the file system of the remote computer 
-    and select a file. The selected file's path will be displayed in the "Remote File Path" text box.
+    This button opens a custom remote file system explorer. You can navigate through the file system of the 
+    remote computer and select a file. The selected file's path will be displayed in the "Remote File Path" 
+    text box.
 
 
     Select Local File Button:
 
-    This button opens a file dialog that allows you to select a file from your local machine. The selected file's path 
-    will be displayed in the "Local File Path" text box.
+    This button opens a file dialog that allows you to select a file from your local machine. The selected 
+    file's path will be displayed in the "Local File Path" text box.
 
 
     Force Password Change Button:
 
-    This button forces the specified user to change their password at the next logon. This is useful for ensuring that 
-    users regularly update their passwords.
+    This button forces the specified user to change their password at the next logon. This is useful for 
+    ensuring that users regularly update their passwords.
 
 
     Log Off User Button:
 
-    This button forces the specified user to log off from the remote computer. This can be useful for ending a user's 
-    session without shutting down the computer.
+    This button forces the specified user to log off from the remote computer. This can be useful for ending a 
+    user's session without shutting down the computer.
 
 
     Disable Account Button:
 
-    This button disables the specified user's account on the remote computer. This can be useful for preventing a user 
-    from logging in to the computer.
+    This button disables the specified user's account on the remote computer. This can be useful for preventing 
+    a user from logging in to the computer.
 
 
     Enable Account Button:
 
-    This button enables the specified user's account on the remote computer. This can be useful for allowing a user 
-    who was previously disabled to log in to the computer.
+    This button enables the specified user's account on the remote computer. This can be useful for allowing a 
+    user who was previously disabled to log in to the computer.
 
 
     Retrieve System Info Button:
 
-    This button retrieves Active Directory information about the specified remote host and all users who have logged into 
-    this host. This information is displayed in the lower display box, and the "Username" dropdown is populated with the 
-    usernames.
+    This button retrieves Active Directory information about the specified remote host and all users who have 
+    logged into this host. This information is displayed in the lower display box, and the "Username" dropdown 
+    is populated with the usernames.
 
 
     Restart Button:
 
-    This button sends a command to the remote computer to restart. This can be useful for applying updates or changes 
-    that require a restart.
+    This button sends a command to the remote computer to restart. This can be useful for applying updates or 
+    changes that require a restart.
 
 
     Kill Process Button:
 
-    This button kills the selected process on the remote computer. This can be useful for stopping a process that is 
-    not responding or that is using too many resources.
+    This button kills the selected process on the remote computer. This can be useful for stopping a process 
+    that is not responding or that is using too many resources.
 
 
     Shutdown Button:
 
-    This button sends a command to the remote computer to shut down. This can be useful for turning off the computer 
-    remotely.
+    This button sends a command to the remote computer to shut down. This can be useful for turning off the 
+    computer remotely.
 
 
     Copy File Button:
@@ -230,8 +231,8 @@ $helpText = @"
 
     Delete File Button:
 
-    This button deletes the file specified in the "Remote File Path" text box from the remote computer. This can be 
-    useful for removing unwanted or unnecessary files from the computer.
+    This button deletes the file specified in the "Remote File Path" text box from the remote computer. This 
+    can be useful for removing unwanted or unnecessary files from the computer.
 
 
     Intelligizer Button:
@@ -242,14 +243,14 @@ $helpText = @"
 
     BoxEmAll Button:
 
-    This button submits all files in the "OpenPhalanx\CopiedFiles" directory to the VMRay sandbox for analysis. This 
-    can be useful for analyzing multiple files at once.
+    This button submits all files in the "OpenPhalanx\CopiedFiles" directory to the VMRay sandbox for analysis. 
+    This can be useful for analyzing multiple files at once.
 
 
     Get Intel Button:
 
-    This button retrieves intelligence on the specified indicator. This can be useful for getting more information 
-    about a potential threat.
+    This button retrieves intelligence on the specified indicator. This can be useful for getting more 
+    information about a potential threat.
 
 
     Undo Isolation Button:

@@ -27,7 +27,7 @@ function Show-ColoredMessage {
     $updateButton.Size = New-Object System.Drawing.Size(200, 30)
     $updateButton.Add_Click({
         # Execute the update script when the button is clicked
-        & ".\Update_Phalanx.ps1"
+        & ".\Tools\Scripts\Update_Phalanx.ps1"
     })
 
     $panel.Controls.Add($label)

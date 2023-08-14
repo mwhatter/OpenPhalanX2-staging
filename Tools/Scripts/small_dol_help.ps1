@@ -18,11 +18,23 @@ function Show-ColoredMessage {
     $label.ForeColor = [System.Drawing.Color]::LightSeaGreen 
     $label.Font = New-Object System.Drawing.Font("Arial", 12) # Increase font size to 12
 
+    # Create the Update button
+    $updateButton = New-Object System.Windows.Forms.Button
+    $updateButton.Text = "Update"
+    $updateButton.Location = New-Object System.Drawing.Point(10, 520) # Adjust the location as needed
+    $updateButton.Size = New-Object System.Drawing.Size(100, 30)
+    $updateButton.Add_Click({
+        # Execute the update script when the button is clicked
+        & ".\Update_Phalanx.ps1"
+    })
+
     $panel.Controls.Add($label)
     $form.Controls.Add($panel)
+    $form.Controls.Add($updateButton) # Add the button to the form
 
     $form.ShowDialog()
 }
+
 
 $helpText = @"
     Enter Remote Computer Name or Get Host List:

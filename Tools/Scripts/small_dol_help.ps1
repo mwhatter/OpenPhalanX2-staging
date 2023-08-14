@@ -3,12 +3,14 @@ function Show-ColoredMessage {
 
     $form = New-Object System.Windows.Forms.Form
     $form.Text = $title
-    $form.Size = New-Object System.Drawing.Size(950, 600)
+    $form.Size = New-Object System.Drawing.Size(980, 600)
     $form.StartPosition = 'CenterScreen'
     $form.BackColor = [System.Drawing.Color]::Black
+    $form.ForeColor = [System.Drawing.Color]::lightseagreen
 
     $panel = New-Object System.Windows.Forms.Panel
-    $panel.Dock = 'Fill'
+    $panel.Size = New-Object System.Drawing.Size(950, 500) 
+    $panel.Location = New-Object System.Drawing.Point(10, 10)
     $panel.AutoScroll = $true
 
     $label = New-Object System.Windows.Forms.Label
@@ -20,9 +22,9 @@ function Show-ColoredMessage {
 
     # Create the Update button
     $updateButton = New-Object System.Windows.Forms.Button
-    $updateButton.Text = "Update"
-    $updateButton.Location = New-Object System.Drawing.Point(10, 520) # Adjust the location as needed
-    $updateButton.Size = New-Object System.Drawing.Size(100, 30)
+    $updateButton.Text = "Update Phalanx"
+    $updateButton.Location = New-Object System.Drawing.Point(350, 520) # Adjust the location to be below the panel
+    $updateButton.Size = New-Object System.Drawing.Size(200, 30)
     $updateButton.Add_Click({
         # Execute the update script when the button is clicked
         & ".\Update_Phalanx.ps1"

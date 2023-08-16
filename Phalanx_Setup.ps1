@@ -1,10 +1,29 @@
 <#
 Run this script first. It downloads and installs a variety of security tools, including 
 DeepBlueCLI, Hayabusa, Sysmon, and Eric Zimmerman's tools. You'll also get directories built 
-to manage tools, their respective files, and outputs for the many funcitons of OpenPhalanX.
+to manage tools, their respective files, and outputs for the many functions of OpenPhalanX.
 #>
 
 Add-Type -AssemblyName System.Windows.Forms
+
+# Check if running as Administrator
+function Test-IsAdmin {
+    return ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+}
+
+if (-not (Test-IsAdmin)) {
+    Write-Host "This script needs to be run as an Administrator. Please run the script as Administrator." -ForegroundColor Red
+    exit
+}
+
+$currentDirName = Split-Path -Path (Get-Location) -Leaf
+
+if ($currentDirName -ne "OpenPhalanX") {
+    if (-not (Test-Path ".\OpenPhalanX")) {
+        New-Item -ItemType Directory -Path ".\OpenPhalanX" | Out-Null
+    }
+    Set-Location ".\OpenPhalanX"
+}
 
 $directories = @(
     ".\CopiedFiles",
@@ -14,14 +33,73 @@ $directories = @(
     ".\Logs\Audit",
     ".\Tools\Hayabusa",
     ".\Tools\Sysmon",
-    ".\Tools\EZTools"
+    ".\Tools\EZTools",
+    ".\Tools\Scripts\Integrations\Inuse",
+    ".\Tools\Scripts\Integrations\Stored"
 )
 
 $errors = @()
 
-unblock-file Defending_Off_the_land.ps1
+################## Workspace ##################
+foreach ($directory in $directories) {
+    try {
+        New-Item -ItemType Directory -Path $directory -Force | Out-Null
+        Write-Host "Directory $directory created successfully."
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Creating $directory"
+            Error = $_.Exception.Message
+        }
+    }
+}
 
-unblock-file API_Setup.ps1.ps1
+function DownloadFilesFromRepo {
+    param (
+        [string]$apiUrl,
+        [string]$localPath,
+        [string]$filterPath = $null
+    )
+
+    $files = Invoke-RestMethod -Uri $apiUrl
+
+    foreach ($file in $files.tree) {
+        if ($file.type -eq "blob" -and ($file.path.StartsWith($filterPath) -or ($filterPath -eq $null))) {
+            $rawUrl = "https://raw.githubusercontent.com/mwhatter/OpenPhalanX2-staging/main/$($file.path)"
+            
+            # Maintain the relative directory structure
+            $relativePath = if ($filterPath) { $file.path.Replace($filterPath, "") } else { $file.path }
+            $destination = Join-Path $localPath $relativePath
+            
+            # Create directories if they don't exist
+            $destinationDir = Split-Path -Path $destination -Parent
+            if (-not (Test-Path $destinationDir)) {
+                New-Item -ItemType Directory -Path $destinationDir | Out-Null
+            }
+            
+            try {
+                Invoke-WebRequest -Uri $rawUrl -OutFile $destination
+            } catch {
+                $errors += [PSCustomObject]@{
+                    Step  = "Downloading file $rawUrl"
+                    Error = $_.Exception.Message
+                }
+            }
+        }
+    }
+}
+
+$scriptsPath = ".\Tools\Scripts"
+if ((Get-ChildItem -Path $scriptsPath -File).Count -gt 0) {
+    Write-Host "Files found in the $scriptsPath directory. Skipping resource downloads."
+} else {
+    # Call the DownloadFilesFromRepo function for all desired directories
+    DownloadFilesFromRepo -apiUrl "https://api.github.com/repos/mwhatter/OpenPhalanX2-staging/git/trees/main?recursive=1" -localPath ".\" -filterPath ""
+    DownloadFilesFromRepo -apiUrl "https://api.github.com/repos/mwhatter/OpenPhalanX2-staging/git/trees/main?recursive=1" -localPath ".\Tools\Scripts" -filterPath "Tools/Scripts/"
+    DownloadFilesFromRepo -apiUrl "https://api.github.com/repos/mwhatter/OpenPhalanX2-staging/git/trees/main?recursive=1" -localPath ".\Tools\Scripts\Integrations\Stored" -filterPath "Tools/Scripts/Integrations/Stored/"
+}
+
+unblock-file Defending_Off_the_land.ps1
+unblock-file API_Setup.ps1
 
 # Unblock all files in .\Tools\Scripts directory recursively
 Get-ChildItem -Path ".\Tools\Scripts" -Recurse | ForEach-Object {
@@ -37,47 +115,73 @@ Get-ChildItem -Path ".\Tools\Scripts\Integrations\Stored" -Recurse | ForEach-Obj
     }
 }
 
-################## Workspace ##################
-foreach ($directory in $directories) {
+function PromptForInstallation {
+    param (
+        [string]$appName,
+        [string]$checkPath = $null
+    )
+
+    $title = "Setup $appName"
+    if ($checkPath -and (Test-Path $checkPath)) {
+        $message = "$appName already exists! Overwrite?"
+    } else {
+        $message = "Do you want to download and setup $appName"
+    }
+
+    $messageBoxResult = [System.Windows.Forms.MessageBox]::Show($message, $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+    
+    return $messageBoxResult -eq 'Yes'
+}
+
+
+################## Downloads ##################
+
+# PowerShell 7
+if (PromptForInstallation -appName "PowerShell 7" -checkPath "$env:ProgramFiles\PowerShell\7\pwsh.exe") {
+    $downloadUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.3.5/PowerShell-7.3.5-win-x64.msi"
+    $fileName = $downloadUrl -split '/' | Select-Object -Last 1
+    $savePath = Join-Path -Path $env:TEMP -ChildPath $fileName
+
     try {
-        New-Item -ItemType Directory -Path $directory -Force | Out-Null
-        Write-Host "Directory $directory created successfully."
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $savePath
+        Write-Host "PowerShell 7 MSI downloaded successfully."
+        Start-Process -FilePath msiexec.exe -ArgumentList "/i `"$savePath`" /qn" -Wait
+        Remove-Item -Path $savePath
+        Write-Host "PowerShell 7 installed successfully."
     } catch {
         $errors += [PSCustomObject]@{
-            Step  = "Creating $directory"
+            Step  = "Installing PowerShell 7"
             Error = $_.Exception.Message
         }
     }
 }
 
-################## Downloads ##################
-# PowerShell 7
-$downloadUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.3.5/PowerShell-7.3.5-win-x64.msi"
-$fileName = $downloadUrl -split '/' | Select-Object -Last 1
-$savePath = Join-Path -Path $env:TEMP -ChildPath $fileName
-
-try {
-    Invoke-WebRequest -Uri $downloadUrl -OutFile $savePath
-    Write-Host "PowerShell 7 MSI downloaded successfully."
-    Start-Process -FilePath msiexec.exe -ArgumentList "/i `"$savePath`" /qn" -Wait
-    Remove-Item -Path $savePath
-    Write-Host "PowerShell 7 installed successfully."
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Installing PowerShell 7"
-        Error = $_.Exception.Message
+# VSCode
+if (PromptForInstallation -appName "VSCode" -checkPath "C:\Users\administrator\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Visual Studio Code") {
+    $vscodeDownloadUrl = "https://update.code.visualstudio.com/latest/win32-x64-user/stable"
+    $vscodeInstallerPath = Join-Path -Path $env:TEMP -ChildPath "VSCodeInstaller.exe"
+    
+    try {
+        # Download VSCode Installer
+        Invoke-WebRequest -Uri $vscodeDownloadUrl -OutFile $vscodeInstallerPath
+        Write-Host "VSCode Installer downloaded successfully."
+        
+        # Silent Install
+        Start-Process -FilePath $vscodeInstallerPath -ArgumentList "/silent", "/mergetasks=!runcode" -Wait
+        Remove-Item -Path $vscodeInstallerPath
+        Write-Host "VSCode installed successfully."
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Installing VSCode"
+            Error = $_.Exception.Message
+        }
     }
 }
 
-function PromptForInstallation($appName) {
-    $messageBoxResult = [System.Windows.Forms.MessageBox]::Show("Do you want to download and install $appName?", "Install $appName", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
-    return $messageBoxResult -eq 'Yes'
-}
-
 # Python
-if (PromptForInstallation("Python")) {
+if (PromptForInstallation -appName "Python" -checkPath "C:\Python\python.exe") {
     $downloadUrl = "https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe"
-    $installerPath = Join-Path -Path c:\Test -ChildPath "python_installer.exe"
+    $installerPath = Join-Path -Path $env:TEMP -ChildPath "python_installer.exe"
 
     try {
         Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath
@@ -87,7 +191,7 @@ if (PromptForInstallation("Python")) {
         
         # Install numscrypt Python module after successfully installing Python
         try {
-            Start-Process -FilePath python.exe -ArgumentList "-m pip install numscrypt" -Wait
+            Start-Process -FilePath "C:\Python\python.exe" -ArgumentList "-m pip install numscrypt" -Wait
             Write-Host "numscrypt Python module installed successfully."
         } catch {
             $errors += [PSCustomObject]@{
@@ -105,7 +209,7 @@ if (PromptForInstallation("Python")) {
 }
 
 # DeepBlueCLI
-if (PromptForInstallation("DeepBlueCLI")) {
+if (PromptForInstallation -appName "DeepBlueCLI" -checkPath ".\Tools\DeepBlueCLI\DeepBlue.ps1") {
     try {
         $deepBlueCLIZip = Invoke-WebRequest -URI "https://github.com/sans-blue-team/DeepBlueCLI/archive/refs/heads/master.zip" -OutFile "DeepBlueCLI.zip"
         Expand-Archive "DeepBlueCLI.zip" -DestinationPath ".\Tools\" -Force
@@ -124,7 +228,7 @@ if (PromptForInstallation("DeepBlueCLI")) {
 }
 
 # Hayabusa
-if (PromptForInstallation("Hayabusa")) {
+if (PromptForInstallation -appName "Hayabusa" -checkPath ".\Tools\Hayabusa\hayabusa.exe") {
     $hayabusaApiUrl = "https://api.github.com/repos/Yamato-Security/hayabusa/releases/latest"
     $hayabusaReleaseData = Invoke-RestMethod -Uri $hayabusaApiUrl
     $hayabusaDownloadUrl = $hayabusaReleaseData.assets | Where-Object { $_.browser_download_url -like "*-win-64-bit.zip" } | Select-Object -First 1 -ExpandProperty browser_download_url
@@ -158,7 +262,7 @@ if (PromptForInstallation("Hayabusa")) {
     $hayabusaExecutable | Rename-Item -NewName "hayabusa.exe" -Force | Out-Null
 
     # Update Hayabusa rules
-    $rulesPath = ".Tools\Hayabusa\Rules"
+    $rulesPath = ".\Tools\Hayabusa\Rules"
     $hayabusaExecutablePath = Join-Path -Path $hayabusaExtractPath -ChildPath "hayabusa.exe"
 
     try {
@@ -174,30 +278,32 @@ if (PromptForInstallation("Hayabusa")) {
 }
 
 # Sysmon
-$sysmonUrl = "https://download.sysinternals.com/files/Sysmon.zip"
-$sysmonconfigurl = "https://raw.githubusercontent.com/olafhartong/sysmon-modular/master/sysmonconfig.xml"
-$sysmonZip = ".\Tools\Sysmon.zip"
-$sysmonPath = ".\Tools\Sysmon"
-$sysmonConfigPath = ".\Tools\Sysmon\sysmonconfig.xml"
+if (PromptForInstallation -appName "Sysmon" -checkPath ".\Tools\Sysmon\Sysmon64.exe") {
+    $sysmonUrl = "https://download.sysinternals.com/files/Sysmon.zip"
+    $sysmonconfigurl = "https://raw.githubusercontent.com/olafhartong/sysmon-modular/master/sysmonconfig.xml"
+    $sysmonZip = ".\Tools\Sysmon.zip"
+    $sysmonPath = ".\Tools\Sysmon"
+    $sysmonConfigPath = ".\Tools\Sysmon\sysmonconfig.xml"
 
-try {
-    Invoke-WebRequest -URI $sysmonUrl -OutFile $sysmonZip
-    Expand-Archive $sysmonZip -DestinationPath $sysmonPath -Force
-    Remove-Item $sysmonZip
-    Invoke-WebRequest -URI $sysmonconfigurl -OutFile $sysmonConfigPath
-    Write-Host "Sysmon and sysmonconfig downloaded and installed successfully."
-} catch {
-    $errors += [PSCustomObject]@{
-        Step  = "Installing Sysmon"
-        Error = $_.Exception.Message
+    try {
+        Invoke-WebRequest -URI $sysmonUrl -OutFile $sysmonZip
+        Expand-Archive $sysmonZip -DestinationPath $sysmonPath -Force
+        Remove-Item $sysmonZip
+        Invoke-WebRequest -URI $sysmonconfigurl -OutFile $sysmonConfigPath
+        Write-Host "Sysmon and sysmonconfig downloaded and installed successfully."
+    } catch {
+        $errors += [PSCustomObject]@{
+            Step  = "Installing Sysmon"
+            Error = $_.Exception.Message
+        }
     }
 }
 
 # Get-ZimmermanTools
-if (PromptForInstallation("Get-ZimmermanTools")) {
-    $zimmermanToolsZip = Invoke-WebRequest -URI "https://raw.githubusercontent.com/EricZimmerman/Get-ZimmermanTools/master/Get-ZimmermanTools.ps1" -OutFile ".\Tools\EZTools\Get-ZimmermanTools.ps1"
+if (PromptForInstallation -appName "Get-ZimmermanTools" -checkPath ".\Tools\EZTools\Get-ZimmermanTools.ps1") {
     try {
-        unblock-file ".\Tools\EZTools\Get-ZimmermanTools.ps1"
+        $zimmermanToolsZip = Invoke-WebRequest -URI "https://raw.githubusercontent.com/EricZimmerman/Get-ZimmermanTools/master/Get-ZimmermanTools.ps1" -OutFile ".\Tools\EZTools\Get-ZimmermanTools.ps1"
+        Unblock-File ".\Tools\EZTools\Get-ZimmermanTools.ps1"
         .\Tools\EZTools\Get-ZimmermanTools.ps1 -Dest ".\Tools\EZTools" -NetVersion 4 -Verbose:$false *> $null
         Write-Host "Get-ZimmermanTools installed successfully."
     } catch {

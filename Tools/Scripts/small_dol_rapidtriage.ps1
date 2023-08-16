@@ -179,12 +179,12 @@ function Get_PrefetchMetadata {
     $driveLetters = Get_RemoteDriveLetters -ComputerName $ComputerName
 
     $ExcelFile = Join-Path $exportPath\$ComputerName\RapidTriage "$ComputerName-RapidTriage.xlsx"
-    
-    $copiedFilesPath = ".\CopiedFiles\$ComputerName\Prefetch"
+    $CWD = (Get-Location).Path
+    $copiedFilesPath = "$CWD\CopiedFiles\$ComputerName\Prefetch"
     New-Item -Path $copiedFilesPath -ItemType Directory -Force
 
     $pecmdPath = Get-PECmdPath
-    $csvOutputDir = "$exportPath\$ComputerName\RapidTriage\CSVOutput"
+    $csvOutputDir = "$exportPath\$ComputerName\RapidTriage\Prefetch"
     New-Item -Path $csvOutputDir -ItemType Directory -Force
 
     foreach ($driveLetter in $driveLetters) {
@@ -199,7 +199,19 @@ function Get_PrefetchMetadata {
     }
 
     # Process the copied prefetch files with PECmd
+try {
     & $pecmdPath -d $copiedFilesPath --csv $csvOutputDir
+    $prefetchdone = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+    Write-Host "Processed prefetch files with PECmd at $prefetchdone" -Foregroundcolor Cyan
+} catch {
+    Write-Host "Error processing prefetch files with PECmd: $_" -ForegroundColor Red
+}
+
+# Check if any CSV files were generated
+if (-not (Test-Path "$csvOutputDir\*.csv")) {
+    Write-Host "No CSV files found in $csvOutputDir." -ForegroundColor Red
+    return
+}
 
     # Create a variable to store the ExcelPackage
     $ExcelPackage = $null
@@ -217,11 +229,13 @@ function Get_PrefetchMetadata {
         Close-ExcelPackage $ExcelPackage
 }
     Remove-Item -Path $csvOutputDir -Recurse -Force
+    Remove-Item -Path $copiedFilesPath -Recurse -Force
     $colprestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "Collected Prefetch from $ComputerName at $colprestart" -ForegroundColor Cyan 
     Log_Message -logfile $logfile -Message "Collected Prefetch from $ComputerName"
     $textboxResults.AppendText("Collected Prefetch from $ComputerName at $colprestart `r`n")
 }
+
 function Copy_BrowserHistoryFiles {
     param (
         [string]$RemoteHost,

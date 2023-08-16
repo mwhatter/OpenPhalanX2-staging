@@ -83,7 +83,7 @@ function Process_Hayabusa {
     $hayabusaPath = ".\hayabusa.exe"
     set-location .\Tools\Hayabusa\
     & $hayabusaPath logon-summary -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\logon-summary.csv" | Out-Null
-    & $hayabusaPath metrics -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\metrics.csv" | Out-Null
+    & $hayabusaPath eid-metrics -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\metrics.csv" | Out-Null
     & $hayabusaPath pivot-keywords-list -d "$EVTXPath\$ComputerName" -o "$exportPath\$ComputerName\Hayabusa\pivot-keywords-list.csv" | Out-Null
     & $hayabusaPath csv-timeline -d "$EVTXPath\$ComputerName" -C -o "$exportPath\$ComputerName\Hayabusa\csv-timeline.csv" -p super-verbose | Out-Null
     $colhayastart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"

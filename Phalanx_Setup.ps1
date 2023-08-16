@@ -218,7 +218,7 @@ if (PromptForInstallation -appName "DeepBlueCLI" -checkPath ".\Tools\DeepBlueCLI
             Remove-Item .\Tools\DeepBlueCLI -Recurse -Force
         }
         Rename-Item .\Tools\DeepBlueCLI-master -NewName DeepBlueCLI -Force | Out-Null
-        Write-Host "DeepBlueCLI installed successfully."
+        Write-Host "DeepBlueCLI downloaded successfully."
     } catch {
         $errors += [PSCustomObject]@{
             Step  = "Installing DeepBlueCLI"
@@ -261,21 +261,6 @@ if (PromptForInstallation -appName "Hayabusa" -checkPath ".\Tools\Hayabusa\hayab
     $hayabusaExecutable = Get-ChildItem -Path $hayabusaExtractPath -Filter "hayabusa-*" -Recurse -File | Select-Object -First 1
     $hayabusaExecutable | Rename-Item -NewName "hayabusa.exe" -Force | Out-Null
 
-    # Update Hayabusa rules
-    $rulesPath = ".\Tools\Hayabusa\Rules"
-    $hayabusaExecutablePath = Join-Path -Path $hayabusaExtractPath -ChildPath "hayabusa.exe"
-
-    try {
-        & $hayabusaExecutablePath update-rules -r $rulesPath | Out-Null
-        Write-Host "Hayabusa rules updated successfully."
-        Remove-Item -Path $hayabusaZipPath -Force
-    } catch {
-        $errors += [PSCustomObject]@{
-            Step  = "Updating Hayabusa rules"
-            Error = $_.Exception.Message
-        }
-    }
-}
 
 # Sysmon
 if (PromptForInstallation -appName "Sysmon" -checkPath ".\Tools\Sysmon\Sysmon64.exe") {

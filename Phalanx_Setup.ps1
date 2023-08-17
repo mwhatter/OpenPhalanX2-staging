@@ -157,7 +157,7 @@ if (PromptForInstallation -appName "PowerShell 7" -checkPath "$env:ProgramFiles\
 }
 
 # VSCode
-if (PromptForInstallation -appName "VSCode" -checkPath "C:\Users\administrator\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Visual Studio Code") {
+if (PromptForInstallation -appName "VSCode" -checkPath "C:\Users\*\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Visual Studio Code") {
     $vscodeDownloadUrl = "https://update.code.visualstudio.com/latest/win32-x64-user/stable"
     $vscodeInstallerPath = Join-Path -Path $env:TEMP -ChildPath "VSCodeInstaller.exe"
     
@@ -218,11 +218,11 @@ if (PromptForInstallation -appName "DeepBlueCLI" -checkPath ".\Tools\DeepBlueCLI
             Remove-Item .\Tools\DeepBlueCLI -Recurse -Force
         }
         Rename-Item .\Tools\DeepBlueCLI-master -NewName DeepBlueCLI -Force | Out-Null
-        Write-Host "DeepBlueCLI downloaded successfully."
+        Write-Host "DeepBlueCLI installed successfully."
     } catch {
         $errors += [PSCustomObject]@{
             Step  = "Installing DeepBlueCLI"
-            Error = $_.Exception.Message
+            Error = $deepBlueCLIZip.Exception.Message
         }
     }
 }
@@ -259,8 +259,9 @@ if (PromptForInstallation -appName "Hayabusa" -checkPath ".\Tools\Hayabusa\hayab
 
     # Rename Hayabusa executable
     $hayabusaExecutable = Get-ChildItem -Path $hayabusaExtractPath -Filter "hayabusa-*" -Recurse -File | Select-Object -First 1
+    remove-item $CWD\OpenPhalanX\Tools\Hayabusa\hayabusa.exe -ErrorAction SilentlyContinue
     $hayabusaExecutable | Rename-Item -NewName "hayabusa.exe" -Force | Out-Null
-
+}
 
 # Sysmon
 if (PromptForInstallation -appName "Sysmon" -checkPath ".\Tools\Sysmon\Sysmon64.exe") {
@@ -294,7 +295,7 @@ if (PromptForInstallation -appName "Get-ZimmermanTools" -checkPath ".\Tools\EZTo
     } catch {
         $errors += [PSCustomObject]@{
             Step  = "Installing Get-ZimmermanTools"
-            Error = $_.Exception.Message
+            Error = $zimmermanToolsZip.Exception.Message
         }
     }
 }

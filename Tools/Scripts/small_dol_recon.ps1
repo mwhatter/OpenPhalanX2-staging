@@ -72,8 +72,8 @@ if (![string]::IsNullOrEmpty($computerName)) {
         # Write the deduplicated data back to the Excel worksheet, overwriting the original
         $deduplicatedData | Export-Excel -Path ".\Logs\Reports\$computerName\ADRecon\SysUserADInfo.xlsx" -WorksheetName 'User Groups' -AutoSize -AutoFilter -TableStyle Medium6 -ClearSheet
         $reconstart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        $textboxResults.AppendText("System and User AD Information exported to Excel workbook at $reconstart`r`n")
-        Write-Host "System and User AD Information exported to Excel workbook at $reconstart" -ForegroundColor Green 
+        $textboxResults.AppendText("System and User AD Information exported from $computerName to Excel workbook at $reconstart`r`n")
+        Write-Host "System and User AD Information exported from $computerName to Excel workbook at $reconstart" -ForegroundColor Green 
     } catch {
         $textboxResults.AppendText("Error obtaining system information: $_`r`n")
     }

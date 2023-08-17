@@ -133,11 +133,36 @@ function PromptForInstallation {
     return $messageBoxResult -eq 'Yes'
 }
 
+################## Custom Installation Prompt ##################
+$title = "Installation Customization"
+$message = "Do you want to customize your installation?"
+$customizeResult = [System.Windows.Forms.MessageBox]::Show($message, $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+
+function ShouldInstall {
+    param (
+        [string]$appName,
+        [string]$checkPath = $null
+    )
+
+    # If user opted for non-customized setup and the component isn't installed, install it
+    if (-not $customizeSetup -and -not (Test-Path $checkPath)) {
+        return $true
+    }
+
+    $title = "Setup $appName"
+    if ($checkPath -and (Test-Path $checkPath)) {
+        $message = "$appName already exists! Overwrite?"
+        $messageBoxResult = [System.Windows.Forms.MessageBox]::Show($message, $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        return $messageBoxResult -eq 'Yes'
+    } else {
+        return $true
+    }
+}
 
 ################## Downloads ##################
 
 # PowerShell 7
-if (PromptForInstallation -appName "PowerShell 7" -checkPath "$env:ProgramFiles\PowerShell\7\pwsh.exe") {
+if (ShouldInstall -appName "PowerShell 7" -checkPath "$env:ProgramFiles\PowerShell\7\pwsh.exe") {
     $downloadUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.3.5/PowerShell-7.3.5-win-x64.msi"
     $fileName = $downloadUrl -split '/' | Select-Object -Last 1
     $savePath = Join-Path -Path $env:TEMP -ChildPath $fileName
@@ -157,7 +182,7 @@ if (PromptForInstallation -appName "PowerShell 7" -checkPath "$env:ProgramFiles\
 }
 
 # VSCode
-if (PromptForInstallation -appName "VSCode" -checkPath "C:\Users\*\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Visual Studio Code") {
+if (ShouldInstall -appName "VSCode" -checkPath "C:\Users\*\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Visual Studio Code") {
     $vscodeDownloadUrl = "https://update.code.visualstudio.com/latest/win32-x64-user/stable"
     $vscodeInstallerPath = Join-Path -Path $env:TEMP -ChildPath "VSCodeInstaller.exe"
     
@@ -179,7 +204,7 @@ if (PromptForInstallation -appName "VSCode" -checkPath "C:\Users\*\AppData\Roami
 }
 
 # Python
-if (PromptForInstallation -appName "Python" -checkPath "C:\Python\python.exe") {
+if (ShouldInstall -appName "Python" -checkPath "C:\Python\python.exe") {
     $downloadUrl = "https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe"
     $installerPath = Join-Path -Path $env:TEMP -ChildPath "python_installer.exe"
 
@@ -209,7 +234,7 @@ if (PromptForInstallation -appName "Python" -checkPath "C:\Python\python.exe") {
 }
 
 # DeepBlueCLI
-if (PromptForInstallation -appName "DeepBlueCLI" -checkPath ".\Tools\DeepBlueCLI\DeepBlue.ps1") {
+if (ShouldInstall -appName "DeepBlueCLI" -checkPath ".\Tools\DeepBlueCLI\DeepBlue.ps1") {
     try {
         $deepBlueCLIZip = Invoke-WebRequest -URI "https://github.com/sans-blue-team/DeepBlueCLI/archive/refs/heads/master.zip" -OutFile "DeepBlueCLI.zip"
         Expand-Archive "DeepBlueCLI.zip" -DestinationPath ".\Tools\" -Force
@@ -228,7 +253,7 @@ if (PromptForInstallation -appName "DeepBlueCLI" -checkPath ".\Tools\DeepBlueCLI
 }
 
 # Hayabusa
-if (PromptForInstallation -appName "Hayabusa" -checkPath ".\Tools\Hayabusa\hayabusa.exe") {
+if (ShouldInstall -appName "Hayabusa" -checkPath ".\Tools\Hayabusa\hayabusa.exe") {
     $hayabusaApiUrl = "https://api.github.com/repos/Yamato-Security/hayabusa/releases/latest"
     $hayabusaReleaseData = Invoke-RestMethod -Uri $hayabusaApiUrl
     $hayabusaDownloadUrl = $hayabusaReleaseData.assets | Where-Object { $_.browser_download_url -like "*-win-64-bit.zip" } | Select-Object -First 1 -ExpandProperty browser_download_url
@@ -264,7 +289,7 @@ if (PromptForInstallation -appName "Hayabusa" -checkPath ".\Tools\Hayabusa\hayab
 }
 
 # Sysmon
-if (PromptForInstallation -appName "Sysmon" -checkPath ".\Tools\Sysmon\Sysmon64.exe") {
+if (ShouldInstall -appName "Sysmon" -checkPath ".\Tools\Sysmon\Sysmon64.exe") {
     $sysmonUrl = "https://download.sysinternals.com/files/Sysmon.zip"
     $sysmonconfigurl = "https://raw.githubusercontent.com/olafhartong/sysmon-modular/master/sysmonconfig.xml"
     $sysmonZip = ".\Tools\Sysmon.zip"
@@ -286,7 +311,7 @@ if (PromptForInstallation -appName "Sysmon" -checkPath ".\Tools\Sysmon\Sysmon64.
 }
 
 # Get-ZimmermanTools
-if (PromptForInstallation -appName "Get-ZimmermanTools" -checkPath ".\Tools\EZTools\Get-ZimmermanTools.ps1") {
+if (ShouldInstall -appName "Get-ZimmermanTools" -checkPath ".\Tools\EZTools\Get-ZimmermanTools.ps1") {
     try {
         $zimmermanToolsZip = Invoke-WebRequest -URI "https://raw.githubusercontent.com/EricZimmerman/Get-ZimmermanTools/master/Get-ZimmermanTools.ps1" -OutFile ".\Tools\EZTools\Get-ZimmermanTools.ps1"
         Unblock-File ".\Tools\EZTools\Get-ZimmermanTools.ps1"

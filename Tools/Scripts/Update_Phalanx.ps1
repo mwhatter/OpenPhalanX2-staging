@@ -8,6 +8,14 @@ function DownloadFiles($url, $destination) {
     }
 }
 
+# Prompt user for OpenPhalanX main scripts update
+$openPhalanxUpdate = Read-Host "Do you want to update the OpenPhalanX main scripts? (yes/no)"
+if ($openPhalanxUpdate -eq "yes") {
+    $openPhalanxUrl = "https://api.github.com/repos/mwhatter/OpenPhalanX2-staging/contents?ref=main"
+    DownloadFiles -url $openPhalanxUrl -destination ".\"
+    Write-Host "OpenPhalanX main scripts updated successfully!"
+}
+
 # Prompt user for button click scripts update
 $buttonClickUpdate = Read-Host "Do you want to update the button click scripts? (yes/no)"
 if ($buttonClickUpdate -eq "yes") {

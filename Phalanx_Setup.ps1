@@ -243,10 +243,10 @@ if (ShouldInstall -appName "DeepBlueCLI" -checkPath ".\Tools\DeepBlueCLI\DeepBlu
             Remove-Item .\Tools\DeepBlueCLI -Recurse -Force
         }
         Rename-Item .\Tools\DeepBlueCLI-master -NewName DeepBlueCLI -Force | Out-Null
-        Write-Host "DeepBlueCLI installed successfully."
+        Write-Host "DeepBlueCLI setup successfully."
     } catch {
         $errors += [PSCustomObject]@{
-            Step  = "Installing DeepBlueCLI"
+            Step  = "Downloading DeepBlueCLI"
             Error = $deepBlueCLIZip.Exception.Message
         }
     }

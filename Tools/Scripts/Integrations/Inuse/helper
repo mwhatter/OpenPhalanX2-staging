@@ -64,14 +64,14 @@ GRANT ALL PRIVILEGES ON DATABASE kong TO kong;
 \q
 EOF
 
-# Install Kong (API Gateway)
+# Install Kong Gateway 3.8.0
 echo "Downloading and Installing Kong Gateway 3.8.0..."
 curl -Lo kong-3.8.0.deb "https://packages.konghq.com/public/gateway-38/deb/debian/pool/bullseye/main/k/ko/kong_3.8.0/kong_3.8.0_$(dpkg --print-architecture).deb"
-sudo apt install -y ./kong-3.8.0.deb
+apt install -y ./kong-3.8.0.deb
 
 # Configure and start Kong
 echo "Setting up Kong database..."
-kong migrations bootstrap -c /etc/kong/kong.conf
+kong config db_import /etc/kong/kong.conf
 echo "Starting Kong..."
 kong start -c /etc/kong/kong.conf
 
@@ -95,8 +95,6 @@ systemctl start redis-server
 # Set up CyberConnect project structure
 echo "Setting up CyberConnect project structure..."
 mkdir -p CyberConnect/{config/{kong,postgres,aranya},core,services/{intelligence_exchange,collaboration,marketplace},data,infrastructure/{docker,kubernetes},scripts}
-
-# Step 2: Create Initial Configurations and Placeholder Files
 
 # Kong Configuration
 echo "Creating initial configuration for Kong..."
@@ -152,14 +150,16 @@ async def root():
 EOL
 done
 
-# Create Celery configuration for each FastAPI service
-echo "Configuring Celery in each service..."
-pip3 install celery[redis]  # Install Celery with Redis support
+# Virtual environment for Celery in each service
+echo "Setting up virtual environments and installing Celery for each service..."
 for service in intelligence_exchange collaboration marketplace; do
+  python3 -m venv CyberConnect/services/$service/venv
+  source CyberConnect/services/$service/venv/bin/activate
+  pip install celery[redis]  # Install Celery with Redis support
+
   cat > CyberConnect/services/$service/celery_app.py <<EOL
 from celery import Celery
 
-# Configure the Celery app
 celery_app = Celery(
     "$service",
     broker="redis://localhost:6379/0",
@@ -168,11 +168,9 @@ celery_app = Celery(
 
 @celery_app.task
 def example_task(data):
-    # Sample background task
     return {"data_processed": data}
 EOL
 
-  # Update FastAPI main.py to include Celery tasks
   cat >> CyberConnect/services/$service/main.py <<EOL
 
 from .celery_app import example_task
@@ -182,13 +180,13 @@ async def process_data(data: str):
     task = example_task.delay(data)
     return {"task_id": task.id}
 EOL
+  deactivate
 done
 
-# Create Docker files for each service (optional for containerization)
+# Docker files for each service (optional for containerization)
 echo "Creating Dockerfiles for each service..."
 for service in intelligence_exchange collaboration marketplace; do
   cat > CyberConnect/infrastructure/docker/Dockerfile.$service <<EOL
-# Dockerfile for $service service
 FROM python:3.9-slim
 WORKDIR /app
 COPY ./services/$service /app
@@ -248,7 +246,9 @@ cat > CyberConnect/scripts/start_celery_workers.sh <<EOL
 #!/bin/bash
 for service in intelligence_exchange collaboration marketplace; do
   echo "Starting Celery worker for \$service..."
+  source CyberConnect/services/\$service/venv/bin/activate
   celery -A CyberConnect.services.\$service.celery_app worker --loglevel=info &
+  deactivate
 done
 EOL
 

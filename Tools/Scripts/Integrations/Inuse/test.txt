@@ -1,34 +1,407 @@
-mwhatter@devlab:~/CyberConnect/scripts$ sudo ./start_all_services.sh 
-Starting PostgreSQL...
-Starting Redis...
-Starting Kong API Gateway...
-Setting up Kong...
-2024/10/26 08:09:15 [warn] ulimit is currently set to "1024". For better performance set it to at least "4096" using "ulimit -n"
-2024/10/26 08:09:15 [warn] ulimit is currently set to "1024". For better performance set it to at least "4096" using "ulimit -n"
-Error: /usr/local/share/lua/5.1/kong/cmd/utils/migrations.lua:16: Database needs bootstrapping or is older than Kong 1.0.
+whatter@devlab:~$ sudo ./cyberconnectsetup.sh
+Updating system...
+Hit:1 http://deb.debian.org/debian bookworm InRelease                          
+Hit:2 http://security.debian.org/debian-security bookworm-security InRelease   
+Get:3 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]        
+Hit:4 https://deb.nodesource.com/node_18.x nodistro InRelease                  
+Hit:5 https://packages.microsoft.com/repos/code stable InRelease               
+Hit:6 https://download.docker.com/linux/debian bookworm InRelease              
+Ign:7 https://packages.konghq.com all InRelease
+Ign:8 https://packages.konghq.com all Release
+Ign:9 https://packages.konghq.com all/main amd64 Packages                      
+Ign:10 https://packages.konghq.com all/main all Packages                       
+Ign:11 https://packages.konghq.com all/main Translation-en                     
+Ign:12 https://packages.konghq.com all/main Translation-en_US                  
+Ign:13 https://packages.konghq.com all/main amd64 DEP-11 Metadata              
+Ign:14 https://packages.konghq.com all/main all DEP-11 Metadata                
+Ign:15 https://packages.konghq.com all/main DEP-11 48x48 Icons                 
+Ign:16 https://packages.konghq.com all/main DEP-11 64x64 Icons                 
+Ign:9 https://packages.konghq.com all/main amd64 Packages                      
+Ign:10 https://packages.konghq.com all/main all Packages                       
+Ign:11 https://packages.konghq.com all/main Translation-en                     
+Ign:12 https://packages.konghq.com all/main Translation-en_US                  
+Ign:13 https://packages.konghq.com all/main amd64 DEP-11 Metadata              
+Ign:14 https://packages.konghq.com all/main all DEP-11 Metadata                
+Ign:15 https://packages.konghq.com all/main DEP-11 48x48 Icons                 
+Ign:16 https://packages.konghq.com all/main DEP-11 64x64 Icons                 
+Ign:9 https://packages.konghq.com all/main amd64 Packages                      
+Ign:10 https://packages.konghq.com all/main all Packages                       
+Ign:11 https://packages.konghq.com all/main Translation-en                     
+Ign:12 https://packages.konghq.com all/main Translation-en_US                  
+Ign:13 https://packages.konghq.com all/main amd64 DEP-11 Metadata              
+Ign:14 https://packages.konghq.com all/main all DEP-11 Metadata                
+Ign:15 https://packages.konghq.com all/main DEP-11 48x48 Icons                 
+Ign:16 https://packages.konghq.com all/main DEP-11 64x64 Icons                 
+Ign:9 https://packages.konghq.com all/main amd64 Packages                      
+Ign:10 https://packages.konghq.com all/main all Packages                       
+Ign:11 https://packages.konghq.com all/main Translation-en                     
+Ign:12 https://packages.konghq.com all/main Translation-en_US                  
+Ign:13 https://packages.konghq.com all/main amd64 DEP-11 Metadata              
+Ign:14 https://packages.konghq.com all/main all DEP-11 Metadata                
+Ign:15 https://packages.konghq.com all/main DEP-11 48x48 Icons                 
+Ign:16 https://packages.konghq.com all/main DEP-11 64x64 Icons                 
+Ign:9 https://packages.konghq.com all/main amd64 Packages                      
+Ign:10 https://packages.konghq.com all/main all Packages                       
+Ign:11 https://packages.konghq.com all/main Translation-en                     
+Ign:12 https://packages.konghq.com all/main Translation-en_US                  
+Ign:13 https://packages.konghq.com all/main amd64 DEP-11 Metadata              
+Ign:14 https://packages.konghq.com all/main all DEP-11 Metadata                
+Ign:15 https://packages.konghq.com all/main DEP-11 48x48 Icons                 
+Ign:16 https://packages.konghq.com all/main DEP-11 64x64 Icons                 
+Ign:9 https://packages.konghq.com all/main amd64 Packages                      
+Ign:10 https://packages.konghq.com all/main all Packages                       
+Ign:11 https://packages.konghq.com all/main Translation-en                     
+Ign:12 https://packages.konghq.com all/main Translation-en_US                  
+Ign:13 https://packages.konghq.com all/main amd64 DEP-11 Metadata              
+Ign:14 https://packages.konghq.com all/main all DEP-11 Metadata                
+Ign:15 https://packages.konghq.com all/main DEP-11 48x48 Icons                 
+Ign:16 https://packages.konghq.com all/main DEP-11 64x64 Icons                 
+Err:9 https://packages.konghq.com all/main amd64 Packages                      
+  404  Not Found [IP: 65.8.243.122 443]
+Ign:10 https://packages.konghq.com all/main all Packages                       
+Ign:11 https://packages.konghq.com all/main Translation-en                     
+Ign:12 https://packages.konghq.com all/main Translation-en_US                  
+Ign:13 https://packages.konghq.com all/main amd64 DEP-11 Metadata              
+Ign:14 https://packages.konghq.com all/main all DEP-11 Metadata                
+Ign:15 https://packages.konghq.com all/main DEP-11 48x48 Icons                 
+Ign:16 https://packages.konghq.com all/main DEP-11 64x64 Icons                 
+Fetched 55.4 kB in 12s (4,524 B/s)
+Reading package lists... Done
+E: Failed to fetch https://packages.konghq.com/dists/all/main/binary-amd64/Packages  404  Not Found [IP: 65.8.243.122 443]
+E: Some index files failed to download. They have been ignored, or old ones used instead.
+Installing essential utilities...
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+curl is already the newest version (7.88.1-10+deb12u7).
+wget is already the newest version (1.21.3-1+b2).
+git is already the newest version (1:2.39.5-0+deb12u1).
+build-essential is already the newest version (12.9).
+software-properties-common is already the newest version (0.99.30-4.1~deb12u1).
+apt-transport-https is already the newest version (2.6.1).
+ca-certificates is already the newest version (20230311).
+gnupg is already the newest version (2.2.40-1.1).
+The following package was automatically installed and is no longer required:
+  libpcre3
+Use 'sudo apt autoremove' to remove it.
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+Python is already installed
+Installing Go...
+--2024-10-26 08:50:49--  https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
+Resolving go.dev (go.dev)... 216.239.38.21, 216.239.32.21, 216.239.34.21, ...
+Connecting to go.dev (go.dev)|216.239.38.21|:443... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://dl.google.com/go/go1.20.3.linux-amd64.tar.gz [following]
+--2024-10-26 08:50:54--  https://dl.google.com/go/go1.20.3.linux-amd64.tar.gz
+Resolving dl.google.com (dl.google.com)... 142.250.69.238, 2607:f8b0:400f:802::200e
+Connecting to dl.google.com (dl.google.com)|142.250.69.238|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 100142274 (96M) [application/x-gzip]
+Saving to: ‘/home/mwhatter/CyberConnect/go1.20.3.linux-amd64.tar.gz’
 
-To start a new installation from scratch, run 'kong migrations bootstrap'.
+go1.20.3.linux-amd6 100%[===================>]  95.50M  27.9MB/s    in 3.8s    
 
-To migrate from a version older than 1.0, migrated to Kong 1.5.0 first. 
-If you still have 'apis' entities, you can convert them to Routes and Services
-using the 'kong migrations migrate-apis' command in Kong 1.5.0.
+2024-10-26 08:50:58 (25.4 MB/s) - ‘/home/mwhatter/CyberConnect/go1.20.3.linux-amd64.tar.gz’ saved [100142274/100142274]
+
+Configuring Go environment variables...
+go version go1.20.3 linux/amd64
+Installing Rust...
+info: downloading installer
+info: profile set to 'default'
+info: default host triple is x86_64-unknown-linux-gnu
+warning: Updating existing toolchain, profile choice will be ignored
+info: syncing channel updates for 'stable-x86_64-unknown-linux-gnu'
+info: default toolchain set to 'stable-x86_64-unknown-linux-gnu'
+
+  stable-x86_64-unknown-linux-gnu unchanged - rustc 1.82.0 (f6e511eec 2024-10-15)
 
 
+Rust is installed now. Great!
+
+To get started you may need to restart your current shell.
+This would reload your PATH environment variable to include
+Cargo's bin directory ($HOME/.cargo/bin).
+
+To configure your current shell, you need to source
+the corresponding env file under $HOME/.cargo.
+
+This is usually done by running one of the following (note the leading DOT):
+. "$HOME/.cargo/env"            # For sh/bash/zsh/ash/dash/pdksh
+source "$HOME/.cargo/env.fish"  # For fish
+./cyberconnectsetup.sh: line 61: /home/mwhatter/.cargo/env: No such file or directory
+./cyberconnectsetup.sh: line 67: rustc: command not found
+./cyberconnectsetup.sh: line 68: cargo: command not found
+Node.js is already installed
+v18.20.4
+10.7.0
+PostgreSQL is already installed
+Installing Kong Gateway...
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 63.6M  100 63.6M    0     0  6696k      0  0:00:09  0:00:09 --:--:-- 19.2M
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+Note, selecting 'kong' instead of '/home/mwhatter/CyberConnect/kong-3.8.0.deb'
+The following NEW packages will be installed:
+  kong
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Need to get 0 B/66.7 MB of archives.
+After this operation, 245 MB of additional disk space will be used.
+Get:1 /home/mwhatter/CyberConnect/kong-3.8.0.deb kong amd64 3.8.0 [66.7 MB]
+Selecting previously unselected package kong.
+(Reading database ... 174865 files and directories currently installed.)
+Preparing to unpack .../CyberConnect/kong-3.8.0.deb ...
+Unpacking kong (3.8.0) ...
+Setting up kong (3.8.0) ...
+N: Download is performed unsandboxed as root as file '/home/mwhatter/CyberConnect/kong-3.8.0.deb' couldn't be accessed by user '_apt'. - pkgAcquire::Run (13: Permission denied)
+Setting up Kong database...
+Error: no file at: /etc/kong/kong.conf
 
   Run with --v (verbose) or --vv (debug) for more details
-Starting Aranya daemon...
-Setting up Aranya daemon...
-/home/mwhatter/CyberConnect/scripts/setup_aranya.sh: line 4: cargo: command not found
-/home/mwhatter/CyberConnect/scripts/setup_aranya.sh: line 5: /home/mwhatter/CyberConnect/target/release/daemon: No such file or directory
-Starting FastAPI services...
-Setting up FastAPI services...
-Starting intelligence_exchange...
-Starting collaboration...
-Starting marketplace...
-Starting Celery workers for background tasks...
-Starting Celery worker for intelligence_exchange...
-Starting Celery worker for collaboration...
-Starting Celery worker for marketplace...
-Starting React frontend...
-All CyberConnect components have been started.
-mwhatter@devlab:~/CyberConnect/scripts$ 
+Kong migrations have already been bootstrapped
+Starting Kong...
+Error: no file at: /etc/kong/kong.conf
+
+  Run with --v (verbose) or --vv (debug) for more details
+Docker is already installed
+Redis is already installed
+Setting up CyberConnect project structure...
+Creating initial configuration for Kong...
+Creating initial configuration for PostgreSQL...
+Creating initial configuration for Aranya...
+Setting up FastAPI templates for services...
+Setting up virtual environments and configuring Celery for each service...
+Collecting celery[redis]
+  Using cached celery-5.4.0-py3-none-any.whl (425 kB)
+Collecting fastapi
+  Using cached fastapi-0.115.3-py3-none-any.whl (94 kB)
+Collecting uvicorn
+  Using cached uvicorn-0.32.0-py3-none-any.whl (63 kB)
+Collecting billiard<5.0,>=4.2.0
+  Using cached billiard-4.2.1-py3-none-any.whl (86 kB)
+Collecting kombu<6.0,>=5.3.4
+  Using cached kombu-5.4.2-py3-none-any.whl (201 kB)
+Collecting vine<6.0,>=5.1.0
+  Using cached vine-5.1.0-py3-none-any.whl (9.6 kB)
+Collecting click<9.0,>=8.1.2
+  Using cached click-8.1.7-py3-none-any.whl (97 kB)
+Collecting click-didyoumean>=0.3.0
+  Using cached click_didyoumean-0.3.1-py3-none-any.whl (3.6 kB)
+Collecting click-repl>=0.2.0
+  Using cached click_repl-0.3.0-py3-none-any.whl (10 kB)
+Collecting click-plugins>=1.1.1
+  Using cached click_plugins-1.1.1-py2.py3-none-any.whl (7.5 kB)
+Collecting tzdata>=2022.7
+  Using cached tzdata-2024.2-py2.py3-none-any.whl (346 kB)
+Collecting python-dateutil>=2.8.2
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Collecting redis!=4.5.5,<6.0.0,>=4.5.2
+  Using cached redis-5.2.0-py3-none-any.whl (261 kB)
+Collecting starlette<0.42.0,>=0.40.0
+  Using cached starlette-0.41.0-py3-none-any.whl (73 kB)
+Collecting pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4
+  Using cached pydantic-2.9.2-py3-none-any.whl (434 kB)
+Collecting typing-extensions>=4.8.0
+  Using cached typing_extensions-4.12.2-py3-none-any.whl (37 kB)
+Collecting h11>=0.8
+  Using cached h11-0.14.0-py3-none-any.whl (58 kB)
+Collecting prompt-toolkit>=3.0.36
+  Using cached prompt_toolkit-3.0.48-py3-none-any.whl (386 kB)
+Collecting amqp<6.0.0,>=5.1.1
+  Using cached amqp-5.2.0-py3-none-any.whl (50 kB)
+Collecting annotated-types>=0.6.0
+  Using cached annotated_types-0.7.0-py3-none-any.whl (13 kB)
+Collecting pydantic-core==2.23.4
+  Using cached pydantic_core-2.23.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+Collecting six>=1.5
+  Using cached six-1.16.0-py2.py3-none-any.whl (11 kB)
+Collecting async-timeout>=4.0.3
+  Using cached async_timeout-4.0.3-py3-none-any.whl (5.7 kB)
+Collecting anyio<5,>=3.4.0
+  Using cached anyio-4.6.2.post1-py3-none-any.whl (90 kB)
+Collecting idna>=2.8
+  Using cached idna-3.10-py3-none-any.whl (70 kB)
+Collecting sniffio>=1.1
+  Using cached sniffio-1.3.1-py3-none-any.whl (10 kB)
+Collecting wcwidth
+  Using cached wcwidth-0.2.13-py2.py3-none-any.whl (34 kB)
+Installing collected packages: wcwidth, vine, tzdata, typing-extensions, sniffio, six, prompt-toolkit, idna, h11, click, billiard, async-timeout, annotated-types, uvicorn, redis, python-dateutil, pydantic-core, click-repl, click-plugins, click-didyoumean, anyio, amqp, starlette, pydantic, kombu, fastapi, celery
+Successfully installed amqp-5.2.0 annotated-types-0.7.0 anyio-4.6.2.post1 async-timeout-4.0.3 billiard-4.2.1 celery-5.4.0 click-8.1.7 click-didyoumean-0.3.1 click-plugins-1.1.1 click-repl-0.3.0 fastapi-0.115.3 h11-0.14.0 idna-3.10 kombu-5.4.2 prompt-toolkit-3.0.48 pydantic-2.9.2 pydantic-core-2.23.4 python-dateutil-2.9.0.post0 redis-5.2.0 six-1.16.0 sniffio-1.3.1 starlette-0.41.0 typing-extensions-4.12.2 tzdata-2024.2 uvicorn-0.32.0 vine-5.1.0 wcwidth-0.2.13
+Collecting celery[redis]
+  Using cached celery-5.4.0-py3-none-any.whl (425 kB)
+Collecting fastapi
+  Using cached fastapi-0.115.3-py3-none-any.whl (94 kB)
+Collecting uvicorn
+  Using cached uvicorn-0.32.0-py3-none-any.whl (63 kB)
+Collecting billiard<5.0,>=4.2.0
+  Using cached billiard-4.2.1-py3-none-any.whl (86 kB)
+Collecting kombu<6.0,>=5.3.4
+  Using cached kombu-5.4.2-py3-none-any.whl (201 kB)
+Collecting vine<6.0,>=5.1.0
+  Using cached vine-5.1.0-py3-none-any.whl (9.6 kB)
+Collecting click<9.0,>=8.1.2
+  Using cached click-8.1.7-py3-none-any.whl (97 kB)
+Collecting click-didyoumean>=0.3.0
+  Using cached click_didyoumean-0.3.1-py3-none-any.whl (3.6 kB)
+Collecting click-repl>=0.2.0
+  Using cached click_repl-0.3.0-py3-none-any.whl (10 kB)
+Collecting click-plugins>=1.1.1
+  Using cached click_plugins-1.1.1-py2.py3-none-any.whl (7.5 kB)
+Collecting tzdata>=2022.7
+  Using cached tzdata-2024.2-py2.py3-none-any.whl (346 kB)
+Collecting python-dateutil>=2.8.2
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Collecting redis!=4.5.5,<6.0.0,>=4.5.2
+  Using cached redis-5.2.0-py3-none-any.whl (261 kB)
+Collecting starlette<0.42.0,>=0.40.0
+  Using cached starlette-0.41.0-py3-none-any.whl (73 kB)
+Collecting pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4
+  Using cached pydantic-2.9.2-py3-none-any.whl (434 kB)
+Collecting typing-extensions>=4.8.0
+  Using cached typing_extensions-4.12.2-py3-none-any.whl (37 kB)
+Collecting h11>=0.8
+  Using cached h11-0.14.0-py3-none-any.whl (58 kB)
+Collecting prompt-toolkit>=3.0.36
+  Using cached prompt_toolkit-3.0.48-py3-none-any.whl (386 kB)
+Collecting amqp<6.0.0,>=5.1.1
+  Using cached amqp-5.2.0-py3-none-any.whl (50 kB)
+Collecting annotated-types>=0.6.0
+  Using cached annotated_types-0.7.0-py3-none-any.whl (13 kB)
+Collecting pydantic-core==2.23.4
+  Using cached pydantic_core-2.23.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+Collecting six>=1.5
+  Using cached six-1.16.0-py2.py3-none-any.whl (11 kB)
+Collecting async-timeout>=4.0.3
+  Using cached async_timeout-4.0.3-py3-none-any.whl (5.7 kB)
+Collecting anyio<5,>=3.4.0
+  Using cached anyio-4.6.2.post1-py3-none-any.whl (90 kB)
+Collecting idna>=2.8
+  Using cached idna-3.10-py3-none-any.whl (70 kB)
+Collecting sniffio>=1.1
+  Using cached sniffio-1.3.1-py3-none-any.whl (10 kB)
+Collecting wcwidth
+  Using cached wcwidth-0.2.13-py2.py3-none-any.whl (34 kB)
+Installing collected packages: wcwidth, vine, tzdata, typing-extensions, sniffio, six, prompt-toolkit, idna, h11, click, billiard, async-timeout, annotated-types, uvicorn, redis, python-dateutil, pydantic-core, click-repl, click-plugins, click-didyoumean, anyio, amqp, starlette, pydantic, kombu, fastapi, celery
+Successfully installed amqp-5.2.0 annotated-types-0.7.0 anyio-4.6.2.post1 async-timeout-4.0.3 billiard-4.2.1 celery-5.4.0 click-8.1.7 click-didyoumean-0.3.1 click-plugins-1.1.1 click-repl-0.3.0 fastapi-0.115.3 h11-0.14.0 idna-3.10 kombu-5.4.2 prompt-toolkit-3.0.48 pydantic-2.9.2 pydantic-core-2.23.4 python-dateutil-2.9.0.post0 redis-5.2.0 six-1.16.0 sniffio-1.3.1 starlette-0.41.0 typing-extensions-4.12.2 tzdata-2024.2 uvicorn-0.32.0 vine-5.1.0 wcwidth-0.2.13
+Collecting celery[redis]
+  Using cached celery-5.4.0-py3-none-any.whl (425 kB)
+Collecting fastapi
+  Using cached fastapi-0.115.3-py3-none-any.whl (94 kB)
+Collecting uvicorn
+  Using cached uvicorn-0.32.0-py3-none-any.whl (63 kB)
+Collecting billiard<5.0,>=4.2.0
+  Using cached billiard-4.2.1-py3-none-any.whl (86 kB)
+Collecting kombu<6.0,>=5.3.4
+  Using cached kombu-5.4.2-py3-none-any.whl (201 kB)
+Collecting vine<6.0,>=5.1.0
+  Using cached vine-5.1.0-py3-none-any.whl (9.6 kB)
+Collecting click<9.0,>=8.1.2
+  Using cached click-8.1.7-py3-none-any.whl (97 kB)
+Collecting click-didyoumean>=0.3.0
+  Using cached click_didyoumean-0.3.1-py3-none-any.whl (3.6 kB)
+Collecting click-repl>=0.2.0
+  Using cached click_repl-0.3.0-py3-none-any.whl (10 kB)
+Collecting click-plugins>=1.1.1
+  Using cached click_plugins-1.1.1-py2.py3-none-any.whl (7.5 kB)
+Collecting tzdata>=2022.7
+  Using cached tzdata-2024.2-py2.py3-none-any.whl (346 kB)
+Collecting python-dateutil>=2.8.2
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Collecting redis!=4.5.5,<6.0.0,>=4.5.2
+  Using cached redis-5.2.0-py3-none-any.whl (261 kB)
+Collecting starlette<0.42.0,>=0.40.0
+  Using cached starlette-0.41.0-py3-none-any.whl (73 kB)
+Collecting pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4
+  Using cached pydantic-2.9.2-py3-none-any.whl (434 kB)
+Collecting typing-extensions>=4.8.0
+  Using cached typing_extensions-4.12.2-py3-none-any.whl (37 kB)
+Collecting h11>=0.8
+  Using cached h11-0.14.0-py3-none-any.whl (58 kB)
+Collecting prompt-toolkit>=3.0.36
+  Using cached prompt_toolkit-3.0.48-py3-none-any.whl (386 kB)
+Collecting amqp<6.0.0,>=5.1.1
+  Using cached amqp-5.2.0-py3-none-any.whl (50 kB)
+Collecting annotated-types>=0.6.0
+  Using cached annotated_types-0.7.0-py3-none-any.whl (13 kB)
+Collecting pydantic-core==2.23.4
+  Using cached pydantic_core-2.23.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+Collecting six>=1.5
+  Using cached six-1.16.0-py2.py3-none-any.whl (11 kB)
+Collecting async-timeout>=4.0.3
+  Using cached async_timeout-4.0.3-py3-none-any.whl (5.7 kB)
+Collecting anyio<5,>=3.4.0
+  Using cached anyio-4.6.2.post1-py3-none-any.whl (90 kB)
+Collecting idna>=2.8
+  Using cached idna-3.10-py3-none-any.whl (70 kB)
+Collecting sniffio>=1.1
+  Using cached sniffio-1.3.1-py3-none-any.whl (10 kB)
+Collecting wcwidth
+  Using cached wcwidth-0.2.13-py2.py3-none-any.whl (34 kB)
+Installing collected packages: wcwidth, vine, tzdata, typing-extensions, sniffio, six, prompt-toolkit, idna, h11, click, billiard, async-timeout, annotated-types, uvicorn, redis, python-dateutil, pydantic-core, click-repl, click-plugins, click-didyoumean, anyio, amqp, starlette, pydantic, kombu, fastapi, celery
+Successfully installed amqp-5.2.0 annotated-types-0.7.0 anyio-4.6.2.post1 async-timeout-4.0.3 billiard-4.2.1 celery-5.4.0 click-8.1.7 click-didyoumean-0.3.1 click-plugins-1.1.1 click-repl-0.3.0 fastapi-0.115.3 h11-0.14.0 idna-3.10 kombu-5.4.2 prompt-toolkit-3.0.48 pydantic-2.9.2 pydantic-core-2.23.4 python-dateutil-2.9.0.post0 redis-5.2.0 six-1.16.0 sniffio-1.3.1 starlette-0.41.0 typing-extensions-4.12.2 tzdata-2024.2 uvicorn-0.32.0 vine-5.1.0 wcwidth-0.2.13
+Creating Dockerfiles for each service...
+Creating component setup scripts in /home/mwhatter/CyberConnect/scripts/...
+Setting up React frontend...
+
+Creating a new React app in /home/mwhatter/CyberConnect/frontend/my-app.
+
+Installing packages. This might take a couple of minutes.
+Installing react, react-dom, and react-scripts with cra-template...
+
+
+added 1314 packages in 55s
+
+259 packages are looking for funding
+  run `npm fund` for details
+
+Initialized a git repository.
+
+Installing template dependencies using npm...
+
+added 46 packages, and changed 1 package in 9s
+
+263 packages are looking for funding
+  run `npm fund` for details
+Removing template package using npm...
+
+
+removed 1 package, and audited 1360 packages in 7s
+
+263 packages are looking for funding
+  run `npm fund` for details
+
+8 vulnerabilities (2 moderate, 6 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+Created git commit.
+
+Success! Created my-app at /home/mwhatter/CyberConnect/frontend/my-app
+Inside that directory, you can run several commands:
+
+  npm start
+    Starts the development server.
+
+  npm run build
+    Bundles the app into static files for production.
+
+  npm test
+    Starts the test runner.
+
+  npm run eject
+    Removes this tool and copies build dependencies, configuration files
+    and scripts into the app directory. If you do this, you can’t go back!
+
+We suggest that you begin by typing:
+
+  cd my-app
+  npm start
+
+Happy hacking!
+Visual Studio Code is already installed
+Creating start_all_services.sh to start all components...
+CyberConnect setup complete. Navigate to /home/mwhatter/CyberConnect/scripts to start individual components or run start_all_services.sh to launch all components together.

@@ -1,1 +1,3 @@
 wget https://download.konghq.com/gateway-3.x-debian/KEY.gpg -O /tmp/KONG-KEY.gpg
+
+sudo gpg --dearmor -o /usr/share/keyrings/kong.gpg /tmp/KONG-KEY.gpg

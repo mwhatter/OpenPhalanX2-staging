@@ -1,8 +1,316 @@
-wget https://download.konghq.com/gateway-3.x-debian/KEY.gpg -O /tmp/KONG-KEY.gpg
+#!/bin/bash
 
-sudo gpg --dearmor -o /usr/share/keyrings/kong.gpg /tmp/KONG-KEY.gpg
+# Update and upgrade system
+echo "Updating system..."
+apt update && apt upgrade -y
 
+# Install base utilities
+echo "Installing essential utilities..."
+apt install -y curl wget git build-essential software-properties-common apt-transport-https ca-certificates gnupg
 
-echo "deb [trusted=yes] https://packages.konghq.com all main" | sudo tee /etc/apt/sources.list.d/kong.list
-sudo apt update
+# Install Python
+echo "Installing Python and Pip..."
+apt install -y python3 python3-pip python3-venv
 
+# Install Go (for Aranya)
+echo "Installing Go..."
+wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.20.3.linux-amd64.tar.gz
+rm go1.20.3.linux-amd64.tar.gz
+
+# Set up Go environment
+echo "Configuring Go environment variables..."
+echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.profile
+echo "export GOPATH=$HOME/go" >> ~/.profile
+source ~/.profile
+
+# Verify Go installation
+go version
+
+# Install Rust (for Aranya)
+echo "Installing Rust..."
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source $HOME/.cargo/env
+
+# Verify Rust installation
+rustc --version
+cargo --version
+
+# Install Node.js (for ActivityPods)
+echo "Installing Node.js..."
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt install -y nodejs
+node -v
+npm -v
+
+# Install PostgreSQL
+echo "Installing PostgreSQL..."
+apt install -y postgresql postgresql-contrib
+
+# Start and enable PostgreSQL service
+echo "Starting PostgreSQL service..."
+systemctl start postgresql
+systemctl enable postgresql
+
+# Configure PostgreSQL user and database
+echo "Configuring PostgreSQL user and database..."
+sudo -i -u postgres psql << EOF
+CREATE USER kong WITH PASSWORD 'your_password';
+ALTER ROLE kong SET client_encoding TO 'utf8';
+ALTER ROLE kong SET default_transaction_isolation TO 'read committed';
+ALTER ROLE kong SET timezone TO 'UTC';
+CREATE DATABASE kong;
+GRANT ALL PRIVILEGES ON DATABASE kong TO kong;
+\q
+EOF
+
+# Install Kong (API Gateway)
+echo "Downloading and Installing Kong Gateway 3.8.0..."
+curl -Lo kong-3.8.0.deb "https://packages.konghq.com/public/gateway-38/deb/debian/pool/bullseye/main/k/ko/kong_3.8.0/kong_3.8.0_$(dpkg --print-architecture).deb"
+sudo apt install -y ./kong-3.8.0.deb
+
+# Configure and start Kong
+echo "Setting up Kong database..."
+kong migrations bootstrap -c /etc/kong/kong.conf
+echo "Starting Kong..."
+kong start -c /etc/kong/kong.conf
+
+# Install Docker (optional, for containerized services)
+echo "Installing Docker..."
+curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt update
+apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Enable Docker service
+systemctl enable docker
+systemctl start docker
+
+# Install Redis for Celery Task Queue
+echo "Installing Redis..."
+apt install -y redis-server
+systemctl enable redis-server
+systemctl start redis-server
+
+# Set up CyberConnect project structure
+echo "Setting up CyberConnect project structure..."
+mkdir -p CyberConnect/{config/{kong,postgres,aranya},core,services/{intelligence_exchange,collaboration,marketplace},data,infrastructure/{docker,kubernetes},scripts}
+
+# Step 2: Create Initial Configurations and Placeholder Files
+
+# Kong Configuration
+echo "Creating initial configuration for Kong..."
+cat > CyberConnect/config/kong/kong.conf <<EOL
+# Kong Configuration File
+database = postgres
+pg_host = 127.0.0.1
+pg_user = kong
+pg_password = your_password
+pg_database = kong
+EOL
+
+# PostgreSQL Configuration
+echo "Creating initial configuration for PostgreSQL..."
+cat > CyberConnect/config/postgres/postgres.conf <<EOL
+# PostgreSQL Configuration
+listen_addresses = '*'
+port = 5432
+max_connections = 100
+EOL
+
+# Aranya Configuration
+echo "Creating initial configuration for Aranya..."
+cat > CyberConnect/config/aranya/config.json <<EOL
+{
+    "name": "CyberConnect-Aranya",
+    "work_dir": "./out",
+    "sync_addr": "0.0.0.0:4321",
+    "pid_file": "./out/daemon.pid",
+    "policies": [
+        {
+            "endpoint": "/data/*",
+            "methods": ["GET", "POST"],
+            "roles": ["admin", "user"],
+            "ipRestrictions": ["0.0.0.0/0"]
+        }
+    ]
+}
+EOL
+
+# FastAPI Initial Setup for Services
+echo "Setting up FastAPI templates for services..."
+for service in intelligence_exchange collaboration marketplace; do
+  mkdir -p CyberConnect/services/$service
+  cat > CyberConnect/services/$service/main.py <<EOL
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+async def root():
+    return {"message": "$service service is up and running"}
+EOL
+done
+
+# Create Celery configuration for each FastAPI service
+echo "Configuring Celery in each service..."
+pip3 install celery[redis]  # Install Celery with Redis support
+for service in intelligence_exchange collaboration marketplace; do
+  cat > CyberConnect/services/$service/celery_app.py <<EOL
+from celery import Celery
+
+# Configure the Celery app
+celery_app = Celery(
+    "$service",
+    broker="redis://localhost:6379/0",
+    backend="redis://localhost:6379/0"
+)
+
+@celery_app.task
+def example_task(data):
+    # Sample background task
+    return {"data_processed": data}
+EOL
+
+  # Update FastAPI main.py to include Celery tasks
+  cat >> CyberConnect/services/$service/main.py <<EOL
+
+from .celery_app import example_task
+
+@app.get("/process-data")
+async def process_data(data: str):
+    task = example_task.delay(data)
+    return {"task_id": task.id}
+EOL
+done
+
+# Create Docker files for each service (optional for containerization)
+echo "Creating Dockerfiles for each service..."
+for service in intelligence_exchange collaboration marketplace; do
+  cat > CyberConnect/infrastructure/docker/Dockerfile.$service <<EOL
+# Dockerfile for $service service
+FROM python:3.9-slim
+WORKDIR /app
+COPY ./services/$service /app
+RUN pip install fastapi uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+EOL
+done
+
+# Create setup scripts for each component
+echo "Creating component setup scripts in CyberConnect/scripts/..."
+
+# Kong Setup Script
+cat > CyberConnect/scripts/setup_kong.sh <<EOL
+#!/bin/bash
+echo "Setting up Kong..."
+kong start -c ../config/kong/kong.conf
+EOL
+
+# PostgreSQL Setup Script
+cat > CyberConnect/scripts/setup_postgres.sh <<EOL
+#!/bin/bash
+echo "Starting PostgreSQL setup..."
+sudo -i -u postgres psql <<EOF
+CREATE USER kong WITH PASSWORD 'your_password';
+ALTER ROLE kong SET client_encoding TO 'utf8';
+ALTER ROLE kong SET default_transaction_isolation TO 'read committed';
+ALTER ROLE kong SET timezone TO 'UTC';
+CREATE DATABASE kong;
+GRANT ALL PRIVILEGES ON DATABASE kong TO kong;
+\q
+EOF
+sudo systemctl restart postgresql
+EOL
+
+# Aranya Setup Script
+cat > CyberConnect/scripts/setup_aranya.sh <<EOL
+#!/bin/bash
+echo "Setting up Aranya daemon..."
+mkdir -p CyberConnect/config/aranya/out
+cargo build --release
+./target/release/daemon CyberConnect/config/aranya/config.json
+EOL
+
+# FastAPI Services Setup Script
+cat > CyberConnect/scripts/setup_fastapi.sh <<EOL
+#!/bin/bash
+echo "Setting up FastAPI services..."
+for service in intelligence_exchange collaboration marketplace; do
+  echo "Starting \$service..."
+  cd CyberConnect/services/\$service
+  uvicorn main:app --host 0.0.0.0 --port 8000 &
+done
+EOL
+
+# Celery Worker Start Script
+cat > CyberConnect/scripts/start_celery_workers.sh <<EOL
+#!/bin/bash
+for service in intelligence_exchange collaboration marketplace; do
+  echo "Starting Celery worker for \$service..."
+  celery -A CyberConnect.services.\$service.celery_app worker --loglevel=info &
+done
+EOL
+
+# Make all scripts executable
+chmod +x CyberConnect/scripts/*.sh
+
+# Additional Setup: Frontend and Development Tools
+
+# Install React frontend
+echo "Setting up React frontend..."
+mkdir -p CyberConnect/frontend
+cd CyberConnect/frontend
+npx create-react-app my-app
+cd ../../  # return to CyberConnect root
+
+# Install Visual Studio Code
+echo "Installing Visual Studio Code..."
+wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
+sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+rm -f packages.microsoft.gpg
+apt update
+apt install -y code
+
+# Create start_all_services.sh to start everything
+echo "Creating start_all_services.sh to start all components..."
+cat > CyberConnect/scripts/start_all_services.sh <<EOL
+#!/bin/bash
+
+# Start PostgreSQL
+echo "Starting PostgreSQL..."
+sudo systemctl start postgresql
+
+# Start Redis
+echo "Starting Redis..."
+sudo systemctl start redis-server
+
+# Start Kong
+echo "Starting Kong API Gateway..."
+./setup_kong.sh
+
+# Start Aranya
+echo "Starting Aranya daemon..."
+./setup_aranya.sh
+
+# Start FastAPI services
+echo "Starting FastAPI services..."
+./setup_fastapi.sh
+
+# Start Celery workers
+echo "Starting Celery workers for background tasks..."
+./start_celery_workers.sh
+
+# Start React frontend
+echo "Starting React frontend..."
+cd ../frontend/my-app
+npm start &
+
+echo "All CyberConnect components have been started."
+EOL
+
+chmod +x CyberConnect/scripts/start_all_services.sh
+
+# Final Summary
+echo "CyberConnect setup complete. Navigate to CyberConnect/scripts to start individual components or run start_all_services.sh to launch all components together."

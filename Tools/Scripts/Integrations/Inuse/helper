@@ -97,9 +97,9 @@ if ! command_exists kong; then
     apt install -y ./kong-3.8.0.deb
     rm kong-3.8.0.deb
 
-    # Configure and start Kong
+    # Bootstrap Kong database
     echo "Setting up Kong database..."
-    kong migrations bootstrap -c /etc/kong/kong.conf
+    kong migrations bootstrap -c /etc/kong/kong.conf || echo "Kong migrations have already been bootstrapped"
     echo "Starting Kong..."
     kong start -c /etc/kong/kong.conf
 else
@@ -194,7 +194,7 @@ echo "Setting up virtual environments and configuring Celery for each service...
 for service in intelligence_exchange collaboration marketplace; do
   python3 -m venv CyberConnect/services/$service/venv
   source CyberConnect/services/$service/venv/bin/activate
-  pip install celery[redis]
+  pip install celery[redis] fastapi uvicorn
   cat > CyberConnect/services/$service/celery_app.py <<EOL
 from celery import Celery
 
@@ -276,7 +276,9 @@ echo "Setting up FastAPI services..."
 for service in intelligence_exchange collaboration marketplace; do
   echo "Starting \$service..."
   cd CyberConnect/services/\$service
+  source venv/bin/activate
   uvicorn main:app --host 0.0.0.0 --port 8000 &
+  deactivate
 done
 EOL
 

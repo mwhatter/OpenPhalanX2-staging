@@ -1,10 +1,10 @@
-mwhatter@devlab:~/CyberConnect/scripts$ sudo ./start_all_services.sh 
+mwhatter@devlab:~/CyberConnect/scripts$ sudo ./start_all_services.sh
 Starting PostgreSQL...
 Starting Redis...
 Starting Kong API Gateway...
 Setting up Kong...
-2024/10/26 07:40:57 [warn] ulimit is currently set to "1024". For better performance set it to at least "4096" using "ulimit -n"
-2024/10/26 07:40:57 [warn] ulimit is currently set to "1024". For better performance set it to at least "4096" using "ulimit -n"
+2024/10/26 07:50:35 [warn] ulimit is currently set to "1024". For better performance set it to at least "4096" using "ulimit -n"
+2024/10/26 07:50:35 [warn] ulimit is currently set to "1024". For better performance set it to at least "4096" using "ulimit -n"
 Error: /usr/local/share/lua/5.1/kong/cmd/utils/migrations.lua:16: Database needs bootstrapping or is older than Kong 1.0.
 
 To start a new installation from scratch, run 'kong migrations bootstrap'.
@@ -24,14 +24,20 @@ Starting FastAPI services...
 Setting up FastAPI services...
 Starting intelligence_exchange...
 ./setup_fastapi.sh: line 5: cd: CyberConnect/services/intelligence_exchange: No such file or directory
+./setup_fastapi.sh: line 6: venv/bin/activate: No such file or directory
+./setup_fastapi.sh: line 7: uvicorn: command not found
+./setup_fastapi.sh: line 8: deactivate: command not found
 Starting collaboration...
 ./setup_fastapi.sh: line 5: cd: CyberConnect/services/collaboration: No such file or directory
-./setup_fastapi.sh: line 6: uvicorn: command not found
+./setup_fastapi.sh: line 6: venv/bin/activate: No such file or directory
+./setup_fastapi.sh: line 7: uvicorn: command not found
+./setup_fastapi.sh: line 8: deactivate: command not found
 Starting marketplace...
 ./setup_fastapi.sh: line 5: cd: CyberConnect/services/marketplace: No such file or directory
-./setup_fastapi.sh: line 6: uvicorn: command not found
+./setup_fastapi.sh: line 6: venv/bin/activate: No such file or directory
+./setup_fastapi.sh: line 8: deactivate: command not found
+./setup_fastapi.sh: line 7: uvicorn: command not found
 Starting Celery workers for background tasks...
-./setup_fastapi.sh: line 6: uvicorn: command not found
 Starting Celery worker for intelligence_exchange...
 ./start_celery_workers.sh: line 4: CyberConnect/services/intelligence_exchange/venv/bin/activate: No such file or directory
 ./start_celery_workers.sh: line 5: celery: command not found
@@ -42,31 +48,7 @@ Starting Celery worker for collaboration...
 ./start_celery_workers.sh: line 6: deactivate: command not found
 Starting Celery worker for marketplace...
 ./start_celery_workers.sh: line 4: CyberConnect/services/marketplace/venv/bin/activate: No such file or directory
-./start_celery_workers.sh: line 6: deactivate: command not found
 ./start_celery_workers.sh: line 5: celery: command not found
+./start_celery_workers.sh: line 6: deactivate: command not found
 Starting React frontend...
 All CyberConnect components have been started.
-mwhatter@devlab:~/CyberConnect/scripts$ sudo ./start_celery_workers.sh 
-Starting Celery worker for intelligence_exchange...
-./start_celery_workers.sh: line 4: CyberConnect/services/intelligence_exchange/venv/bin/activate: No such file or directory
-./start_celery_workers.sh: line 5: celery: command not found
-./start_celery_workers.sh: line 6: deactivate: command not found
-Starting Celery worker for collaboration...
-./start_celery_workers.sh: line 4: CyberConnect/services/collaboration/venv/bin/activate: No such file or directory
-./start_celery_workers.sh: line 5: celery: command not found
-./start_celery_workers.sh: line 6: deactivate: command not found
-Starting Celery worker for marketplace...
-./start_celery_workers.sh: line 4: CyberConnect/services/marketplace/venv/bin/activate: No such file or directory
-./start_celery_workers.sh: line 5: celery: command not found
-./start_celery_workers.sh: line 6: deactivate: command not found
-mwhatter@devlab:~/CyberConnect/scripts$ cd ..
-mwhatter@devlab:~/CyberConnect$ ls
-config  core  data  frontend  infrastructure  scripts  services
-mwhatter@devlab:~/CyberConnect$ cd services/
-mwhatter@devlab:~/CyberConnect/services$ ls
-collaboration  intelligence_exchange  marketplace
-mwhatter@devlab:~/CyberConnect/services$ cd intelligence_exchange/
-mwhatter@devlab:~/CyberConnect/services/intelligence_exchange$ ls
-celery_app.py  main.py  venv
-mwhatter@devlab:~/CyberConnect/services/intelligence_exchange$ 
-

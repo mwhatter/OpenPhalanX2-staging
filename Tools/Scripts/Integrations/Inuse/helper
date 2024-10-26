@@ -42,9 +42,9 @@ if ! command_exists go; then
 
     # Set up Go environment
     echo "Configuring Go environment variables..."
-    echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.profile
-    echo "export GOPATH=$USER_HOME/go" >> ~/.profile
-    source ~/.profile
+    echo "export PATH=$PATH:/usr/local/go/bin" >> "$USER_HOME/.profile"
+    echo "export GOPATH=$USER_HOME/go" >> "$USER_HOME/.profile"
+    source "$USER_HOME/.profile"
 else
     echo "Go is already installed"
 fi

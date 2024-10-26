@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Function to check if a command is available
+command_exists() {
+    command -v "$1" &> /dev/null
+}
+
 # Update and upgrade system
 echo "Updating system..."
 apt update && apt upgrade -y
@@ -8,53 +13,71 @@ apt update && apt upgrade -y
 echo "Installing essential utilities..."
 apt install -y curl wget git build-essential software-properties-common apt-transport-https ca-certificates gnupg
 
-# Install Python
-echo "Installing Python and Pip..."
-apt install -y python3 python3-pip python3-venv
+# Install Python if not already installed
+if ! command_exists python3; then
+    echo "Installing Python and Pip..."
+    apt install -y python3 python3-pip python3-venv
+else
+    echo "Python is already installed"
+fi
 
 # Install Go (for Aranya)
-echo "Installing Go..."
-wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
-tar -C /usr/local -xzf go1.20.3.linux-amd64.tar.gz
-rm go1.20.3.linux-amd64.tar.gz
+if ! command_exists go; then
+    echo "Installing Go..."
+    wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
+    tar -C /usr/local -xzf go1.20.3.linux-amd64.tar.gz
+    rm go1.20.3.linux-amd64.tar.gz
 
-# Set up Go environment
-echo "Configuring Go environment variables..."
-echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.profile
-echo "export GOPATH=$HOME/go" >> ~/.profile
-source ~/.profile
+    # Set up Go environment
+    echo "Configuring Go environment variables..."
+    echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.profile
+    echo "export GOPATH=$HOME/go" >> ~/.profile
+    source ~/.profile
+else
+    echo "Go is already installed"
+fi
 
 # Verify Go installation
 go version
 
 # Install Rust (for Aranya)
-echo "Installing Rust..."
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source $HOME/.cargo/env
+if ! command_exists rustc; then
+    echo "Installing Rust..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source $HOME/.cargo/env
+else
+    echo "Rust is already installed"
+fi
 
 # Verify Rust installation
 rustc --version
 cargo --version
 
 # Install Node.js (for ActivityPods)
-echo "Installing Node.js..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt install -y nodejs
+if ! command_exists node; then
+    echo "Installing Node.js..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt install -y nodejs
+else
+    echo "Node.js is already installed"
+fi
+
 node -v
 npm -v
 
-# Install PostgreSQL
-echo "Installing PostgreSQL..."
-apt install -y postgresql postgresql-contrib
+# Install PostgreSQL if not already installed
+if ! command_exists psql; then
+    echo "Installing PostgreSQL..."
+    apt install -y postgresql postgresql-contrib
 
-# Start and enable PostgreSQL service
-echo "Starting PostgreSQL service..."
-systemctl start postgresql
-systemctl enable postgresql
+    # Start and enable PostgreSQL service
+    echo "Starting PostgreSQL service..."
+    systemctl start postgresql
+    systemctl enable postgresql
 
-# Configure PostgreSQL user and database
-echo "Configuring PostgreSQL user and database..."
-sudo -i -u postgres psql << EOF
+    # Configure PostgreSQL user and database
+    echo "Configuring PostgreSQL user and database..."
+    sudo -i -u postgres psql << EOF
 CREATE USER kong WITH PASSWORD 'your_password';
 ALTER ROLE kong SET client_encoding TO 'utf8';
 ALTER ROLE kong SET default_transaction_isolation TO 'read committed';
@@ -63,34 +86,50 @@ CREATE DATABASE kong;
 GRANT ALL PRIVILEGES ON DATABASE kong TO kong;
 \q
 EOF
+else
+    echo "PostgreSQL is already installed"
+fi
 
-# Install Kong Gateway 3.8.0
-echo "Downloading and Installing Kong Gateway 3.8.0..."
-curl -Lo kong-3.8.0.deb "https://packages.konghq.com/public/gateway-38/deb/debian/pool/bullseye/main/k/ko/kong_3.8.0/kong_3.8.0_$(dpkg --print-architecture).deb"
-apt install -y ./kong-3.8.0.deb
+# Install Kong Gateway
+if ! command_exists kong; then
+    echo "Installing Kong Gateway..."
+    curl -Lo kong-3.8.0.deb "https://packages.konghq.com/public/gateway-38/deb/debian/pool/bullseye/main/k/ko/kong_3.8.0/kong_3.8.0_$(dpkg --print-architecture).deb"
+    apt install -y ./kong-3.8.0.deb
+    rm kong-3.8.0.deb
 
-# Configure and start Kong
-echo "Setting up Kong database..."
-kong config db_import /etc/kong/kong.conf
-echo "Starting Kong..."
-kong start -c /etc/kong/kong.conf
+    # Configure and start Kong
+    echo "Setting up Kong database..."
+    kong migrations bootstrap -c /etc/kong/kong.conf
+    echo "Starting Kong..."
+    kong start -c /etc/kong/kong.conf
+else
+    echo "Kong is already installed"
+fi
 
-# Install Docker (optional, for containerized services)
-echo "Installing Docker..."
-curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-apt update
-apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+# Install Docker if not already installed
+if ! command_exists docker; then
+    echo "Installing Docker..."
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    apt update
+    apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-# Enable Docker service
-systemctl enable docker
-systemctl start docker
+    # Enable Docker service
+    systemctl enable docker
+    systemctl start docker
+else
+    echo "Docker is already installed"
+fi
 
 # Install Redis for Celery Task Queue
-echo "Installing Redis..."
-apt install -y redis-server
-systemctl enable redis-server
-systemctl start redis-server
+if ! command_exists redis-server; then
+    echo "Installing Redis..."
+    apt install -y redis-server
+    systemctl enable redis-server
+    systemctl start redis-server
+else
+    echo "Redis is already installed"
+fi
 
 # Set up CyberConnect project structure
 echo "Setting up CyberConnect project structure..."
@@ -150,13 +189,12 @@ async def root():
 EOL
 done
 
-# Virtual environment for Celery in each service
-echo "Setting up virtual environments and installing Celery for each service..."
+# Virtual environment setup for Celery in each service
+echo "Setting up virtual environments and configuring Celery for each service..."
 for service in intelligence_exchange collaboration marketplace; do
   python3 -m venv CyberConnect/services/$service/venv
   source CyberConnect/services/$service/venv/bin/activate
-  pip install celery[redis]  # Install Celery with Redis support
-
+  pip install celery[redis]
   cat > CyberConnect/services/$service/celery_app.py <<EOL
 from celery import Celery
 
@@ -183,10 +221,11 @@ EOL
   deactivate
 done
 
-# Docker files for each service (optional for containerization)
+# Create Docker files for each service (optional for containerization)
 echo "Creating Dockerfiles for each service..."
 for service in intelligence_exchange collaboration marketplace; do
   cat > CyberConnect/infrastructure/docker/Dockerfile.$service <<EOL
+# Dockerfile for $service service
 FROM python:3.9-slim
 WORKDIR /app
 COPY ./services/$service /app
@@ -258,20 +297,28 @@ chmod +x CyberConnect/scripts/*.sh
 # Additional Setup: Frontend and Development Tools
 
 # Install React frontend
-echo "Setting up React frontend..."
-mkdir -p CyberConnect/frontend
-cd CyberConnect/frontend
-npx create-react-app my-app
-cd ../../  # return to CyberConnect root
+if [ ! -d "CyberConnect/frontend/my-app" ]; then
+    echo "Setting up React frontend..."
+    mkdir -p CyberConnect/frontend
+    cd CyberConnect/frontend
+    npx create-react-app my-app
+    cd ../../  # return to CyberConnect root
+else
+    echo "React frontend is already set up"
+fi
 
-# Install Visual Studio Code
-echo "Installing Visual Studio Code..."
-wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
-sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-rm -f packages.microsoft.gpg
-apt update
-apt install -y code
+# Install Visual Studio Code if not already installed
+if ! command_exists code; then
+    echo "Installing Visual Studio Code..."
+    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+    install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
+    sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+    rm -f packages.microsoft.gpg
+    apt update
+    apt install -y code
+else
+    echo "Visual Studio Code is already installed"
+fi
 
 # Create start_all_services.sh to start everything
 echo "Creating start_all_services.sh to start all components..."

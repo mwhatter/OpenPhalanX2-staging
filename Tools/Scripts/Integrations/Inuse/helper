@@ -1,1 +1,4 @@
-curl -fsSL https://download.konghq.com/gateway-3.x-debian/KEY.gpg | sudo gpg --dearmor -o /usr/share/keyrings/kong.gpg
+mwhatter@devlab:~$ curl -fsSL https://download.konghq.com/gateway-3.x-debian/KEY.gpg | sudo gpg --dearmor -o /usr/share/keyrings/kong.gpg
+
+gpg: no valid OpenPGP data found.
+mwhatter@devlab:~$ 

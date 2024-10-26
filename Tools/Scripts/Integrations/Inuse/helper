@@ -1,12 +1,19 @@
 #!/bin/bash
 
+# Detect the original user's home directory
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME=$(eval echo "~$SUDO_USER")
+else
+    USER_HOME="$HOME"
+fi
+
+# Define the project root directory
+PROJECT_ROOT="$USER_HOME/CyberConnect"
+
 # Function to check if a command is available
 command_exists() {
     command -v "$1" &> /dev/null
 }
-
-# Define the project root directory
-PROJECT_ROOT="$HOME/CyberConnect"
 
 # Update and upgrade system
 echo "Updating system..."
@@ -27,16 +34,16 @@ fi
 # Install Go (for Aranya)
 if ! command_exists go; then
     echo "Installing Go..."
-    if [ ! -f "go1.20.3.linux-amd64.tar.gz" ]; then
-        wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
+    if [ ! -f "$PROJECT_ROOT/go1.20.3.linux-amd64.tar.gz" ]; then
+        wget -P "$PROJECT_ROOT" https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
     fi
-    tar -C /usr/local -xzf go1.20.3.linux-amd64.tar.gz
-    rm go1.20.3.linux-amd64.tar.gz
+    tar -C /usr/local -xzf "$PROJECT_ROOT/go1.20.3.linux-amd64.tar.gz"
+    rm "$PROJECT_ROOT/go1.20.3.linux-amd64.tar.gz"
 
     # Set up Go environment
     echo "Configuring Go environment variables..."
     echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.profile
-    echo "export GOPATH=$HOME/go" >> ~/.profile
+    echo "export GOPATH=$USER_HOME/go" >> ~/.profile
     source ~/.profile
 else
     echo "Go is already installed"
@@ -48,10 +55,10 @@ go version
 # Install Rust (for Aranya)
 if ! command_exists rustc; then
     echo "Installing Rust..."
-    if [ ! -f "$HOME/.cargo/env" ]; then
+    if [ ! -f "$USER_HOME/.cargo/env" ]; then
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     fi
-    source $HOME/.cargo/env
+    source "$USER_HOME/.cargo/env"
 else
     echo "Rust is already installed"
 fi
@@ -100,11 +107,11 @@ fi
 # Install Kong Gateway
 if ! command_exists kong; then
     echo "Installing Kong Gateway..."
-    if [ ! -f "kong-3.8.0.deb" ]; then
-        curl -Lo kong-3.8.0.deb "https://packages.konghq.com/public/gateway-38/deb/debian/pool/bullseye/main/k/ko/kong_3.8.0/kong_3.8.0_$(dpkg --print-architecture).deb"
+    if [ ! -f "$PROJECT_ROOT/kong-3.8.0.deb" ]; then
+        curl -Lo "$PROJECT_ROOT/kong-3.8.0.deb" "https://packages.konghq.com/public/gateway-38/deb/debian/pool/bullseye/main/k/ko/kong_3.8.0/kong_3.8.0_$(dpkg --print-architecture).deb"
     fi
-    apt install -y ./kong-3.8.0.deb
-    rm kong-3.8.0.deb
+    apt install -y "$PROJECT_ROOT/kong-3.8.0.deb"
+    rm "$PROJECT_ROOT/kong-3.8.0.deb"
 
     # Bootstrap Kong database
     echo "Setting up Kong database..."
@@ -148,11 +155,11 @@ fi
 
 # Set up CyberConnect project structure
 echo "Setting up CyberConnect project structure..."
-mkdir -p $PROJECT_ROOT/{config/{kong,postgres,aranya},core,services/{intelligence_exchange,collaboration,marketplace},data,infrastructure/{docker,kubernetes},scripts}
+mkdir -p "$PROJECT_ROOT"/{config/{kong,postgres,aranya},core,services/{intelligence_exchange,collaboration,marketplace},data,infrastructure/{docker,kubernetes},scripts}
 
 # Kong Configuration
 echo "Creating initial configuration for Kong..."
-cat > $PROJECT_ROOT/config/kong/kong.conf <<EOL
+cat > "$PROJECT_ROOT/config/kong/kong.conf" <<EOL
 # Kong Configuration File
 database = postgres
 pg_host = 127.0.0.1
@@ -163,7 +170,7 @@ EOL
 
 # PostgreSQL Configuration
 echo "Creating initial configuration for PostgreSQL..."
-cat > $PROJECT_ROOT/config/postgres/postgres.conf <<EOL
+cat > "$PROJECT_ROOT/config/postgres/postgres.conf" <<EOL
 # PostgreSQL Configuration
 listen_addresses = '*'
 port = 5432
@@ -172,7 +179,7 @@ EOL
 
 # Aranya Configuration
 echo "Creating initial configuration for Aranya..."
-cat > $PROJECT_ROOT/config/aranya/config.json <<EOL
+cat > "$PROJECT_ROOT/config/aranya/config.json" <<EOL
 {
     "name": "CyberConnect-Aranya",
     "work_dir": "./out",
@@ -192,8 +199,8 @@ EOL
 # FastAPI Initial Setup for Services
 echo "Setting up FastAPI templates for services..."
 for service in intelligence_exchange collaboration marketplace; do
-  mkdir -p $PROJECT_ROOT/services/$service
-  cat > $PROJECT_ROOT/services/$service/main.py <<EOL
+  mkdir -p "$PROJECT_ROOT/services/$service"
+  cat > "$PROJECT_ROOT/services/$service/main.py" <<EOL
 from fastapi import FastAPI
 
 app = FastAPI()
@@ -207,10 +214,10 @@ done
 # Virtual environment setup for Celery in each service
 echo "Setting up virtual environments and configuring Celery for each service..."
 for service in intelligence_exchange collaboration marketplace; do
-  python3 -m venv $PROJECT_ROOT/services/$service/venv
-  source $PROJECT_ROOT/services/$service/venv/bin/activate
+  python3 -m venv "$PROJECT_ROOT/services/$service/venv"
+  source "$PROJECT_ROOT/services/$service/venv/bin/activate"
   pip install celery[redis] fastapi uvicorn
-  cat > $PROJECT_ROOT/services/$service/celery_app.py <<EOL
+  cat > "$PROJECT_ROOT/services/$service/celery_app.py" <<EOL
 from celery import Celery
 
 celery_app = Celery(
@@ -224,7 +231,7 @@ def example_task(data):
     return {"data_processed": data}
 EOL
 
-  cat >> $PROJECT_ROOT/services/$service/main.py <<EOL
+  cat >> "$PROJECT_ROOT/services/$service/main.py" <<EOL
 
 from .celery_app import example_task
 
@@ -239,7 +246,7 @@ done
 # Create Docker files for each service (optional for containerization)
 echo "Creating Dockerfiles for each service..."
 for service in intelligence_exchange collaboration marketplace; do
-  cat > $PROJECT_ROOT/infrastructure/docker/Dockerfile.$service <<EOL
+  cat > "$PROJECT_ROOT/infrastructure/docker/Dockerfile.$service" <<EOL
 # Dockerfile for $service service
 FROM python:3.9-slim
 WORKDIR /app
@@ -253,14 +260,14 @@ done
 echo "Creating component setup scripts in $PROJECT_ROOT/scripts/..."
 
 # Kong Setup Script
-cat > $PROJECT_ROOT/scripts/setup_kong.sh <<EOL
+cat > "$PROJECT_ROOT/scripts/setup_kong.sh" <<EOL
 #!/bin/bash
 echo "Setting up Kong..."
-kong start -c $PROJECT_ROOT/config/kong/kong.conf
+kong start -c "$PROJECT_ROOT/config/kong/kong.conf"
 EOL
 
 # PostgreSQL Setup Script
-cat > $PROJECT_ROOT/scripts/setup_postgres.sh <<EOL
+cat > "$PROJECT_ROOT/scripts/setup_postgres.sh" <<EOL
 #!/bin/bash
 echo "Starting PostgreSQL setup..."
 sudo -i -u postgres psql <<EOF
@@ -276,21 +283,21 @@ sudo systemctl restart postgresql
 EOL
 
 # Aranya Setup Script
-cat > $PROJECT_ROOT/scripts/setup_aranya.sh <<EOL
+cat > "$PROJECT_ROOT/scripts/setup_aranya.sh" <<EOL
 #!/bin/bash
 echo "Setting up Aranya daemon..."
-mkdir -p $PROJECT_ROOT/config/aranya/out
+mkdir -p "$PROJECT_ROOT/config/aranya/out"
 cargo build --release
-$PROJECT_ROOT/target/release/daemon $PROJECT_ROOT/config/aranya/config.json
+"$PROJECT_ROOT/target/release/daemon" "$PROJECT_ROOT/config/aranya/config.json"
 EOL
 
 # FastAPI Services Setup Script
-cat > $PROJECT_ROOT/scripts/setup_fastapi.sh <<EOL
+cat > "$PROJECT_ROOT/scripts/setup_fastapi.sh" <<EOL
 #!/bin/bash
 echo "Setting up FastAPI services..."
 for service in intelligence_exchange collaboration marketplace; do
   echo "Starting \$service..."
-  cd $PROJECT_ROOT/services/\$service
+  cd "$PROJECT_ROOT/services/\$service"
   source venv/bin/activate
   uvicorn main:app --host 0.0.0.0 --port 8000 &
   deactivate
@@ -298,28 +305,28 @@ done
 EOL
 
 # Celery Worker Start Script
-cat > $PROJECT_ROOT/scripts/start_celery_workers.sh <<EOL
+cat > "$PROJECT_ROOT/scripts/start_celery_workers.sh" <<EOL
 #!/bin/bash
 for service in intelligence_exchange collaboration marketplace; do
   echo "Starting Celery worker for \$service..."
-  source $PROJECT_ROOT/services/\$service/venv/bin/activate
-  celery -A $PROJECT_ROOT.services.\$service.celery_app worker --loglevel=info &
+  source "$PROJECT_ROOT/services/\$service/venv/bin/activate"
+  celery -A "$PROJECT_ROOT/services/\$service/celery_app" worker --loglevel=info &
   deactivate
 done
 EOL
 
 # Make all scripts executable
-chmod +x $PROJECT_ROOT/scripts/*.sh
+chmod +x "$PROJECT_ROOT/scripts/"*.sh
 
 # Additional Setup: Frontend and Development Tools
 
 # Install React frontend
 if [ ! -d "$PROJECT_ROOT/frontend/my-app" ]; then
     echo "Setting up React frontend..."
-    mkdir -p $PROJECT_ROOT/frontend
-    cd $PROJECT_ROOT/frontend
+    mkdir -p "$PROJECT_ROOT/frontend"
+    cd "$PROJECT_ROOT/frontend"
     npx create-react-app my-app
-    cd $PROJECT_ROOT  # return to CyberConnect root
+    cd "$PROJECT_ROOT"  # return to CyberConnect root
 else
     echo "React frontend is already set up"
 fi
@@ -339,7 +346,7 @@ fi
 
 # Create start_all_services.sh to start everything
 echo "Creating start_all_services.sh to start all components..."
-cat > $PROJECT_ROOT/scripts/start_all_services.sh <<EOL
+cat > "$PROJECT_ROOT/scripts/start_all_services.sh" <<EOL
 #!/bin/bash
 
 # Start PostgreSQL
@@ -352,29 +359,29 @@ sudo systemctl start redis-server
 
 # Start Kong
 echo "Starting Kong API Gateway..."
-$PROJECT_ROOT/scripts/setup_kong.sh
+"$PROJECT_ROOT/scripts/setup_kong.sh"
 
 # Start Aranya
 echo "Starting Aranya daemon..."
-$PROJECT_ROOT/scripts/setup_aranya.sh
+"$PROJECT_ROOT/scripts/setup_aranya.sh"
 
 # Start FastAPI services
 echo "Starting FastAPI services..."
-$PROJECT_ROOT/scripts/setup_fastapi.sh
+"$PROJECT_ROOT/scripts/setup_fastapi.sh"
 
 # Start Celery workers
 echo "Starting Celery workers for background tasks..."
-$PROJECT_ROOT/scripts/start_celery_workers.sh
+"$PROJECT_ROOT/scripts/start_celery_workers.sh"
 
 # Start React frontend
 echo "Starting React frontend..."
-cd $PROJECT_ROOT/frontend/my-app
+cd "$PROJECT_ROOT/frontend/my-app"
 npm start &
 
 echo "All CyberConnect components have been started."
 EOL
 
-chmod +x $PROJECT_ROOT/scripts/start_all_services.sh
+chmod +x "$PROJECT_ROOT/scripts/start_all_services.sh"
 
 # Final Summary
-echo "CyberConnect setup complete. Navigate to CyberConnect/scripts to start individual components or run start_all_services.sh to launch all components together."
+echo "CyberConnect setup complete. Navigate to $PROJECT_ROOT/scripts to start individual components or run start_all_services.sh to launch all components together."

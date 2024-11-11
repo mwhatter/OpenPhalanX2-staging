@@ -31,7 +31,7 @@ OpenPhalanX is a comprehensive toolkit designed to secure remote systems. Whethe
 
 ## Installation
 
-To install OpenPhalanX on a Windows host, you will need to execute a PowerShell script called "Deploy_Phalanx_Formation.ps1". Follow the steps below to install using Visual Studio Code (VSCode):
+To install OpenPhalanX on a Windows host, you will need to execute a PowerShell script called "Phalanx_Setup.ps1". Follow the steps below to install using Visual Studio Code (VSCode):
 
 1. Clone the OpenPhalanX repository from GitHub to your local machine.
 

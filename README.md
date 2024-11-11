@@ -47,6 +47,11 @@ To install OpenPhalanX on a Windows host, you will need to execute a PowerShell 
    
    You will also need the ActiveDirectory powershell module. This module is part of RSAT and can be enabled by follow the instructions here - https://learn.microsoft.com/en-US/troubleshoot/windows-server/system-management-components/remote-server-administration-tools
 
+6. After running the setup script, import the OpenPhalanX module by running the following command in PowerShell:
+   ```powershell
+   Import-Module -Name OpenPhalanX
+   ```
+
 ## API Keys Configuration
 
 OpenPhalanX utilizes several APIs to facilitate its operations, each of which require API keys. These keys should be added to the locations specified in the `API_Keys&Extensions.txt` file.

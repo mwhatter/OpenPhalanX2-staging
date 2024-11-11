@@ -4,6 +4,8 @@ DeepBlueCLI, Hayabusa, Sysmon, and Eric Zimmerman's tools. You'll also get direc
 to manage tools, their respective files, and outputs for the many functions of OpenPhalanX.
 #>
 
+Import-Module -Name OpenPhalanX
+
 Add-Type -AssemblyName System.Windows.Forms
 
 # Check if running as Administrator

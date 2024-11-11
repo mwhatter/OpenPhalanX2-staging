@@ -76,47 +76,7 @@
     The path to save exported files.
 #>
 
-$modules = @('ImportExcel', 'ActiveDirectory', 'PSSQLite')
-
-foreach ($module in $modules) {
-    if (-not (Get-Module -ListAvailable -Name $module)) {
-        Write-Host "Module $module not found. Installing..."
-        if ($module -eq 'ActiveDirectory') {
-            # Install RSAT if ActiveDirectory module is missing
-            try {
-                Add-WindowsCapability -Online -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -ErrorAction Stop | Out-Null
-            }
-            catch {
-                Write-Host "Failed to install RSAT tools. Please ensure you have administrative rights."
-                exit
-            }
-        }
-        else {
-            try {
-                Install-Module -Name $module
-            }
-            catch {
-                Write-Host "Failed to install module $module. Please ensure you have the necessary permissions and that PSGallery is accessible."
-                exit
-            }
-        }
-    }
-    else {
-        Write-Host "Module $module is already installed."
-    }
-    Import-Module -Name $module -ErrorAction SilentlyContinue
-}
-
-
-Import-Module Microsoft.PowerShell.Utility
-
-# Add necessary assemblies
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Web
-Add-Type -AssemblyName System.Net.Http
-Add-Type -AssemblyName System.Drawing
-
-[System.Windows.Forms.Application]::EnableVisualStyles()
+Import-Module -Name OpenPhalanX
 
 $logstart = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 $CWD = (Get-Location).Path
@@ -127,18 +87,6 @@ $CopiedFilesDir = "$CWD\CopiedFiles"
 $exportPath = "$CWD\Logs\Reports"
 $script:allComputers = @()
 $InformationPreference = 'SilentlyContinue'
-
-function Log_Message {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$Message,
-        [Parameter(Mandatory = $true)]
-        [string]$LogFile
-    )
-
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Add-Content -Path $LogFile -Value "Time=[$timestamp] User=[$Username] Message=[$Message]"
-}
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Defending Off the Land"

@@ -835,3 +835,903 @@ function Get-ProcessAssociations {
 
     return $combinedData
 }
+
+function Copy-RemoteFile {
+    param (
+        [string]$computerName,
+        [string]$filePath,
+        [string]$CopiedFilesDir,
+        [string]$logfile
+    )
+
+    $filecopy = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "Copied $filePath from $computerName at $filecopy" -ForegroundColor Cyan 
+    Log_Message -logfile $logfile -Message "Copied $filePath from $computerName"
+
+    if (![string]::IsNullOrEmpty($computerName) -and ![string]::IsNullOrEmpty($filePath)) {
+        $driveLetter = $filePath.Substring(0, 1)
+        $uncPath = "\\$computerName\$driveLetter$" + $filePath.Substring(2)
+        try {
+            if ((Test-Path -Path $uncPath) -and (Get-Item -Path $uncPath).PSIsContainer) {
+                $copyDecision = [System.Windows.Forms.MessageBox]::Show("Do you want to copy the directory and all its child directories? Select No to only copy files from specified directory", "Copy Directory Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNoCancel, [System.Windows.Forms.MessageBoxIcon]::Question)
+                if ($copyDecision -eq "Yes") {
+                    Copy-Item -Path $uncPath -Destination $CopiedFilesDir -Force -Recurse
+                } elseif ($copyDecision -eq "No") {
+                    Get-ChildItem -Path $uncPath -File | ForEach-Object {
+                        Copy-Item -Path $_.FullName -Destination $CopiedFilesDir -Force
+                    }
+                } else {
+                    return
+                }
+            } else {
+                Copy-Item -Path $uncPath -Destination $CopiedFilesDir -Force
+            }
+
+            [System.Windows.Forms.MessageBox]::Show("File '$filePath' copied to local directory.", "Copy File Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+            $textboxResults.AppendText("File '$filePath' copied to local directory.`r`n")
+            $filecopy = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            Write-Host "Copied $filePath from $computerName at $filecopy" -ForegroundColor Cyan 
+            Log_Message -logfile $logfile -Message "Copied $filePath from $computerName"
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Error copying file '$filePath' to local directory: $_", "Copy File Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            $textboxResults.AppendText("Error copying file '$filePath' to local directory: $_`r`n")
+        }
+    }
+}
+
+function Copy-RemoteModules {
+    param(
+        [string]$computerName,
+        [string]$CopiedFilesPath
+    )
+
+    function Get_RemoteDriveLetters {
+        param(
+            [string]$ComputerName
+        )
+
+        $driveLetters = Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 } | ForEach-Object { $_.DeviceID.TrimEnd(':') }
+        }
+
+        return $driveLetters
+    }
+
+    function CopyModules {
+        param (
+            [string]$ComputerName,
+            [string]$CopiedFilesPath
+        )
+
+        $uniqueModules = Invoke-Command -ComputerName $computerName -ScriptBlock {
+            Get-Process | ForEach-Object { $_.Modules } | Select-Object -Unique -ExpandProperty FileName
+        }
+
+        $uniqueModules | ForEach-Object -ThrottleLimit 100 -Parallel {
+            $modulePath = $_
+            if (![string]::IsNullOrEmpty($modulePath)) {
+                $driveLetter = $modulePath.Substring(0, 1)
+                $uncPath = "\\$using:computerName\$driveLetter$" + $modulePath.Substring(2)
+                $modifiedModuleName = $modulePath.Replace('\', '_').Replace(':', '')
+                $destinationPath = Join-Path -Path $using:CopiedFilesPath -ChildPath $modifiedModuleName
+                Copy-Item $uncPath -Destination $destinationPath\$ComputerName -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    $copytreestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $textboxResults.AppendText("Started copying all modules from $computerName at $copytreestart`r`n")
+    write-host "Started copying all modules from $computerName at $copytreestart" -ForegroundColor Green
+
+    try {
+        CopyModules -computerName $computerName -CopiedFilesPath $CopiedFilesPath
+        $copytreesend = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $textboxResults.AppendText("Copied all modules from $computerName at $copytreesend`r`n")
+        write-host "Copied all modules from $computerName at $copytreesend" -ForegroundColor Green
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show("Error while trying to copy modules to the CopiedFiles folder: $($_.Exception.Message)", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    }
+}
+
+function Delete-RemoteFile {
+    param (
+        [string]$computerName,
+        [string]$filePath,
+        [string]$logfile
+    )
+
+    if (![string]::IsNullOrEmpty($computerName) -and ![string]::IsNullOrEmpty($filePath)) {
+        $filename = [System.IO.Path]::GetFileName($filePath)
+        try {
+            $result = [System.Windows.Forms.MessageBox]::Show("Do you want to delete '$filePath'?", "Delete File or Directory", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+            if ($result -eq "Yes") {
+                Invoke-Command -ComputerName $computerName -ScriptBlock { param($path) Remove-Item -Path $path -Recurse -Force -ErrorAction Stop } -ArgumentList $filePath
+                [System.Windows.Forms.MessageBox]::Show("'$filename' deleted from remote host.", "Delete Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+                $textboxResults.AppendText("'$filename' deleted from remote host.`r`n")
+            }
+            $filedelete = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            Write-Host "Deleted $filePath from $computerName at $filedelete" -ForegroundColor Cyan 
+            Log_Message -logfile $logfile -Message "Deleted $filePath from $computerName"
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Error deleting '$filename' from remote host: $_", "Delete Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            $textboxResults.AppendText("Error deleting '$filename' from remote host: $_`r`n")
+        }
+    }
+}
+
+function Disable-RemoteAccount {
+    param (
+        [string]$selectedUser,
+        [string]$Username,
+        [string]$logfile
+    )
+
+    Disable-ADAccount -Identity $selectedUser  
+    $gotdisabusr = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "$Username disabled $selectedUser at $gotdisabusr" -ForegroundColor Cyan 
+    Log_Message -logfile $logfile -Message "$Username disabled $selectedUser"
+    $textboxResults.AppendText("$Username disabled $selectedUser at $gotdisabusr")
+}
+
+function Enable-RemoteAccount {
+    param (
+        [string]$selectedUser,
+        [string]$Username,
+        [string]$logfile
+    )
+
+    Enable-ADAccount -Identity $selectedUser
+    $gotenabusr = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "$Username enabled $selectedUser at $gotenabusr" -ForegroundColor Cyan 
+    Log_Message -logfile $logfile -Message "$Username enabled $selectedUser"
+    $textboxResults.AppendText("$Username enabled $selectedUser at $gotenabusr")
+}
+
+function Get-FileScan {
+    param (
+        [string]$fileName,
+        [string]$textboxResults
+    )
+
+    $Response = Invoke-RestMethod -Uri "https://api.threatstream.com/api/v1/submit/search/?q=$script:Note" -Headers @{"Authorization" = "apikey redacted"} -Method Get 
+    if ($Response.meta.total_count -gt 0) {
+        $textboxResults.AppendText("Total Count: " + $Response.meta.total_count + [Environment]::NewLine)
+        foreach ($report in $Response.objects) {
+            $textboxResults.AppendText(($report | ConvertTo-Json -Depth 100) + [Environment]::NewLine)
+        }
+    } else {
+        $textboxResults.AppendText("No reports found for file: $fileName. Please wait and try again.")
+    }
+}
+
+function Get-HostList {
+    return Get-AllComputers
+}
+
+function Get-Intel {
+    param (
+        [string]$IndicatorFromMain,
+        [string]$directoryForScanning,
+        [string]$pythonExe
+    )
+
+    $integrationFiles = Get-ChildItem -Path $directoryForScanning -Filter "Integration_*_Intel.py"
+
+    foreach ($file in $integrationFiles) {
+        if ($file.Name -match "Integration_(.+?)_Intel\.py") {
+            $providerName = $matches[1]
+            $confirmation = [System.Windows.Forms.MessageBox]::Show(
+                "Do you want to use the $providerName API provider to fetch intel for the indicator?", 
+                "Confirm Provider Usage", 
+                [System.Windows.Forms.MessageBoxButtons]::YesNoCancel,
+                [System.Windows.Forms.MessageBoxIcon]::Question)
+
+            if ($confirmation -eq 'Cancel') {
+                return "Action cancelled by user."
+            } elseif ($confirmation -eq 'Yes') {
+                $scriptPath = Join-Path $directoryForScanning $file.Name
+                $output = & $pythonExe $scriptPath $IndicatorFromMain | Out-String
+
+                if ($output -contains "specific-string") {
+                }
+                return "Python script output for $providerName $output"
+            }
+        }
+    }
+}
+
+function Show-Help {
+    param([string]$message, [string]$title)
+
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = $title
+    $form.Size = New-Object System.Drawing.Size(910, 600)
+    $form.StartPosition = 'CenterScreen'
+    $form.BackColor = [System.Drawing.Color]::Black
+    $form.ForeColor = [System.Drawing.Color]::lightseagreen
+
+    $panel = New-Object System.Windows.Forms.Panel
+    $panel.Size = New-Object System.Drawing.Size(880, 500) 
+    $panel.Location = New-Object System.Drawing.Point(10, 10)
+    $panel.AutoScroll = $true
+
+    $label = New-Object System.Windows.Forms.Label
+    $label.Text = $message
+    $label.AutoSize = $true
+    $label.Location = New-Object System.Drawing.Point(10, 10)
+    $label.ForeColor = [System.Drawing.Color]::LightSeaGreen 
+    $label.Font = New-Object System.Drawing.Font("Arial", 12)
+
+    $updateButton = New-Object System.Windows.Forms.Button
+    $updateButton.Text = "Update Phalanx"
+    $updateButton.Location = New-Object System.Drawing.Point(350, 520)
+    $updateButton.Size = New-Object System.Drawing.Size(200, 30)
+    $updateButton.Add_Click({
+        & ".\Tools\Scripts\Update_Phalanx.ps1"
+    })
+
+    $panel.Controls.Add($label)
+    $form.Controls.Add($panel)
+    $form.Controls.Add($updateButton)
+
+    $form.ShowDialog()
+}
+
+function Hunt-RemoteFile {
+    param (
+        [string]$remoteComputer,
+        [string]$remoteFilePath,
+        [string]$logfile,
+        [string]$textboxResults
+    )
+
+    $drivelessPath = Split-Path $remoteFilePath -NoQualifier
+    $driveLetter = Split-Path $remoteFilePath -Qualifier
+    $filehunt = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "Hunting for file: $remoteFilePath at $filehunt" -ForegroundColor Cyan
+    $textboxResults.AppendText("Hunting for file: $remoteFilePath at $filehunt `r`n")
+    Log_Message -logfile $logfile -Message "Hunting for file: $remoteFilePath"
+    if (![string]::IsNullOrEmpty($remoteComputer) -and ![string]::IsNullOrEmpty($remoteFilePath)) {
+        $localPath = '.\CopiedFiles'
+        if (!(Test-Path $localPath)) {
+            New-Item -ItemType Directory -Force -Path $localPath
+        }
+
+        try {
+            $fileExists = Invoke-Command -ComputerName $remoteComputer -ScriptBlock {
+                param($path)
+                Test-Path -Path $path
+            } -ArgumentList $remoteFilePath -ErrorAction Stop
+        } catch {
+            Write-Error "Failed to check if the file exists on the remote computer: $_"
+            return
+        }
+
+        if ($fileExists) {
+            $destination = Join-Path -Path $localPath -ChildPath (Split-Path $remoteFilePath -Leaf)
+            Copy-Item -Path "\\$remoteComputer\$($remoteFilePath.Replace(':', '$'))" -Destination $destination -Force
+            $textboxResults.AppendText("$remoteFilePath copied from $remoteComputer.")
+            Log_Message -Message "$remoteFilePath copied from $remoteComputer" -LogFilePath $LogFile
+            Write-Host "$remoteFilePath copied from $remoteComputer" -ForegroundColor -Cyan
+        } else {
+            $foundInRecycleBin = $false
+
+            try {
+                $recycleBinItems = Invoke-Command -ComputerName $remoteComputer -ScriptBlock {
+                    Get-ChildItem 'C:\$Recycle.Bin' -Recurse -Force | Where-Object { $_.PSIsContainer -eq $false -and $_.Name -like "$I*" } | ForEach-Object {
+                        $originalFilePath = Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -First 1
+                        $originalFilePath = $originalFilePath -replace '^[^\:]*\:', ''
+                        [PSCustomObject]@{
+                            Name = $_.Name
+                            FullName = $_.FullName
+                            OriginalFilePath = $originalFilePath
+                        }
+                    }
+                } -ErrorAction Stop
+            } catch {
+                Write-Error "Failed to retrieve the items from the recycle bin: $_ `r`n"
+                return
+            }
+
+            $recycleBinItem = $recycleBinItems | Where-Object { $_.OriginalFilePath -eq "$drivelessPath" }
+            if ($recycleBinItem) {
+                Write-Host "Match found in Recycle Bin: $($recycleBinItem.Name)" -Foregroundcolor Cyan
+                $textboxResults.AppendText("Match found in Recycle Bin: $($recycleBinItem.Name) `r`n")
+                $foundInRecycleBin = $true
+            }
+
+            if (!$foundInRecycleBin) {
+                $textboxResults.AppendText("File not found in the remote computer or recycle bin. `r`n")
+            } else {
+                try {
+                    $vssServiceStatus = Invoke-Command -ComputerName $remoteComputer -ScriptBlock {
+                        $service = Get-Service -Name VSS
+                        $status = $service.Status
+                        return $status
+                    } 
+                    
+                    $statusCodes = @{
+                        1 = "Stopped"
+                        2 = "Start Pending"
+                        3 = "Stop Pending"
+                        4 = "Running"
+                        5 = "Continue Pending"
+                        6 = "Pause Pending"
+                        7 = "Paused"
+                    }
+                    
+                    $vssServiceStatusName = $statusCodes[$vssServiceStatus]
+                    Write-Host "VSS service status: $vssServiceStatusName" -ForegroundColor Cyan
+                    $textboxResults.AppendText("VSS service status on $remoteComputer $vssServiceStatusName `r`n")
+
+                    if ($vssServiceStatus -eq 'Running') {
+                        $shadowCopyFileExists = Invoke-Command -ComputerName $remoteComputer -ScriptBlock {
+                            param($path, $driveLetter)
+                            $shadowCopies = vssadmin list shadows /for=$driveLetter | Where-Object { $_ -match 'GLOBALROOT\\Device\\HarddiskVolumeShadowCopy\\d+' }
+                            foreach ($shadowCopy in $shadowCopies) {
+                                $shadowCopyPath = $shadowCopy -replace '.*?(GLOBALROOT\\Device\\HarddiskVolumeShadowCopy\\d+).*', '$1'
+                                if (Test-Path -Path "$shadowCopyPath\$path") {
+                                    return $shadowCopyPath
+                                }
+                            }
+                        } -ArgumentList $drivelessPath, $driveLetter -ErrorAction Stop
+
+                        if ($shadowCopyFileExists) {
+                            Write-Host "Shadow copy found: $shadowCopyFileExists" -ForegroundColor Cyan
+                            $textboxResults.AppendText("Shadow copy found: $shadowCopyFileExists `r`n")
+                        } else {
+                            Write-Host "No shadow copy found for the file." -ForegroundColor Red
+                            $textboxResults.AppendText("No shadow copy found for the file. `r`n")
+                        }
+                    }
+                } catch {
+                    Write-Error "Failed to check VSS service or shadow copies: $_"
+                    return
+                }
+            $restorePoints = Invoke-Expression -Command "wmic /Namespace:\\root\default Path SystemRestore get * /format:list"
+            if ($restorePoints) {
+                Write-Host "System Restore points exist on $remoteComputer" -ForegroundColor Cyan
+                $textboxResults.AppendText("System Restore points exist on $remoteComputer `r`n")
+            } else {
+                Write-Host "No System Restore points found." -ForegroundColor Red
+                $textboxResults.AppendText("No System Restore points found. `r`n")
+            }
+            $lastBackup = Invoke-Expression -Command "wbadmin get versions"
+            if ($lastBackup) {
+                Write-Host "Backups exist on $remoteComputer" -ForegroundColor Cyan
+                $textboxResults.AppendText("Backups exist on $remoteComputer `r`n")
+            } else {
+                Write-Host "No backups found." -ForegroundColor Red
+                $textboxResults.AppendText("No backups found. `r`n")
+            }
+            }
+        }
+    } else {
+        [System.Windows.Forms.MessageBox]::Show("Please enter a remote computer name and file path.", "Missing Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+    }
+    $fileput = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    write-host "File Hunt completed at $fileput" -ForegroundColor Green 
+    Log_Message -logfile $logfile -Message "File Hunt completed"
+    $textboxResults.AppendText("File Hunt completed at $fileput `r`n")
+}
+
+function Run-Intelligazer {
+    param (
+        [string]$computerName,
+        [string]$CopiedFilesDir,
+        [string]$logfile,
+        [string]$textboxResults
+    )
+
+    $output = New-Object System.Collections.ArrayList
+    $patterns = @(
+        'HTTP/S' = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
+        'FTP' = 'ftp://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?(?:/[^\s]*)?',
+        'SFTP' = 'sftp://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?(?:/[^\s]*)?',
+        'SCP' = 'scp://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?(?:/[^\s]*)?',
+        'DATA' = 'data://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
+        'SSH' = 'ssh://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?',
+        'LDAP' = 'ldap://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?(?:/[^\s]*)?',
+        'RFC 1918 IP Address' = '\b(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b',
+        'Non-RFC 1918 IP Address' = '\b((?!10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3})\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b',
+        'Email' = '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    )
+
+    $includeFilePath = [System.Windows.Forms.MessageBox]::Show("Do you want to include File Paths?", "Include File Paths", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+
+    if ($includeFilePath -eq 'Yes') {
+        $patterns['File Path'] = '(file:///)?(?![sSpP]:)[a-zA-Z]:[\\\\/].+?\.[a-zA-Z0-9]{2,5}(?=[\s,;]|$)'
+    }    
+
+    Remove-Item .\Logs\Reports\$computerName\indicators.html -ErrorAction SilentlyContinue 
+    New-Item -ItemType Directory -Path ".\Logs\Reports\$computerName\" -Force | Out-Null
+    $Intelligazerstart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "Intelligazer started at $Intelligazerstart" -ForegroundColor Cyan
+    Log_Message -logfile $logfile -Message "Intelligazer started at "
+    $textboxResults.AppendText("Intelligazer started at $Intelligazerstart `r`n")
+    $logDirs = ".\Logs\EVTX\$computerName", ".\Logs\Reports\$computerName\RapidTriage", ".\Logs\Reports\$computerName\ADRecon"
+
+    function processMatches($content, $file) {
+        $matchList = New-Object System.Collections.ArrayList
+        foreach ($type in $patterns.Keys) {
+            $pattern = $patterns[$type]
+            $matchResults = [regex]::Matches($content, $pattern) | ForEach-Object {$_.Value}
+            foreach ($match in $matchResults) {
+                $newObject = New-Object PSObject -Property @{
+                    'Source File' = $file
+                    'Data' = $match
+                    'Type' = $type
+                }
+                if ($null -ne $newObject) {
+                    [void]$matchList.Add($newObject)
+                }
+
+                if ($type -eq 'HTTP/S' -and $match -match '(?i)(?:http[s]?://)?(?:www.)?([^/]+)') {
+                    $parentDomain = $matches[1]
+                    $domainObject = New-Object PSObject -Property @{
+                        'Source File' = $file
+                        'Data' = $parentDomain
+                        'Type' = 'Domain'
+                    }
+                    if ($null -ne $domainObject) {
+                        [void]$matchList.Add($domainObject)
+                    }
+                }
+            }
+        }
+        return $matchList
+    }
+
+    foreach ($dir in $logDirs) {
+        $files = Get-ChildItem $dir -Recurse -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName 
+        foreach ($file in $files) {
+            switch -regex ($file) {
+                '\.sqlite$' {
+                    $tableNames = Invoke-SqliteQuery -DataSource $file -Query "SELECT name FROM sqlite_master WHERE type='table';"
+                    foreach ($tableName in $tableNames.name) {
+                        try {
+                            $query = "SELECT * FROM [$tableName]"
+                            $data = Invoke-SqliteQuery -DataSource $file -Query $query -ErrorAction Stop
+                            $content = $data | Out-String
+                            $matchess = processMatches $content $file
+                            if ($matchess -ne $null) {
+                                $output.AddRange(@($matchess))
+                            } 
+                        } catch {
+                        }
+                    }
+                }
+                '\.(csv|txt|json|evtx|html)$' {
+                    if ($file -match "\.evtx$") {
+                        try {
+                            $content = Get-WinEvent -Path $file -ErrorAction Stop | Format-List | Out-String
+                        } catch {
+                            Write-Host "No events found in $file" -ForegroundColor Magenta
+                            continue
+                        }
+                    } else {
+                        $content = Get-Content $file
+                    }
+                    $matchess = processMatches $content $file
+                    if ($matchess -ne $null) {
+                        $output.AddRange(@($matchess))
+                    }
+                }
+                '\.xlsx?$' {
+                    $excel = $null
+                    $workbook = $null
+                
+                    try {
+                        $excel = New-Object -ComObject Excel.Application
+                        $excel.Visible = $false
+                        
+                        $workbook = $excel.Workbooks.Open($file)
+                        
+                        foreach ($sheet in $workbook.Worksheets) {
+                            try {
+                                $range = $sheet.UsedRange
+                                $content = $range.Value2 | Out-String
+                                $matches = processMatches $content $file
+                                if ($matches -ne $null) {
+                                    $output.AddRange($matches)
+                                } 
+                            }
+                            catch {
+                                Write-Error "Error processing sheet: $_"
+                            }
+                        }
+                    }
+                    catch {
+                        Write-Error "An error occurred: $_"
+                    }
+                    finally {
+                        if ($workbook) {
+                            $workbook.Close($false)
+                            [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
+                        }
+                
+                        if ($excel) {
+                            $excel.Quit()
+                            [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+                        }
+                
+                        [System.GC]::Collect()
+                        [System.GC]::WaitForPendingFinalizers()
+                    }
+                }
+                default {
+                    if ((Get-File $file).IsText) {
+                        $content = Get-Content $file
+                        $matchess = processMatches $content $file
+                        if ($matchess -ne $null) {
+                            $output.AddRange(@($matchess))
+                        }
+                    }
+                }
+            }
+        }
+    }     
+
+    $copiedFiles = Get-ChildItem $CopiedFilesDir -Recurse -File | Select-Object -ExpandProperty FullName
+    foreach ($file in $copiedFiles) {
+        $sha256 = Get-FileHashSHA256 -FilePath $file
+        [void]$output.Add((New-Object PSObject -Property @{
+            'Source File' = $file
+            'Data' = $sha256
+            'Type' = 'SHA256'
+        }))
+    }
+
+    $output = $output | Sort-Object 'Data' -Unique
+
+    $Indicatordone = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $count = $output.Count
+    Write-Host "Indicators extracted at $Indicatordone. Total count: $count" -ForegroundColor Cyan
+    Log_Message -logfile $logfile -Message "Indicators extracted "
+    $textboxResults.AppendText("Indicators extracted at $Indicatordone. Total count: $count `r`n")
+
+    $htmlFile = New-Item -Path ".\Logs\Reports\$computerName\indicators.html" -ItemType File -Force
+
+    $html = @"
+<!DOCTYPE html>
+<html>
+<head>
+<title>Indicator List Explorer</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    background-color: #181818;
+    color: #c0c0c0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+}
+#controls {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    width: calc(100% - 20px);
+    padding: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px; 
+    box-sizing: border-box;
+    flex-direction: row;
+}
+#filter-type {
+    height: 310px;
+    width: auto;
+    font-size: 16px;
+    margin-right: 10px;
+    z-index: 2;
+}
+    .indicator {
+        margin: 10px 0;
+        text-align: left;
+        width: 90%;
+        color: #4dc5b5;
+    }
+    .indicator:hover {
+        cursor: pointer;
+    }
+    .indicator-info {
+        display: none;
+        margin-top: 20px;
+        text-align: center;
+    }
+    
+    #controls h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 50px;
+        margin-right: auto; 
+    }
+    #controls div {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        order: 1;
+        align-self: center; 
+        z-index: 1;
+    }
+    #indicators {
+        margin-top: 60px;
+        width: 60vw;
+    }
+    #controls-select {
+        position: sticky;
+        top: 60px;
+        z-index: 1;
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 10px 0;
+        box-sizing: border-box;
+    }
+    #filter-keyword {
+        height: 35px;
+        font-size: 20px;
+    }
+    #filter-type {
+        order: 2;
+        height: 325px;
+        width: auto;
+        font-size: 16px;
+        margin-top: 10px;
+        position: absolute;
+        right: 0;
+        top: 100%;
+        z-index: 2;
+    }
+    #filter-button {
+        height: 35px;
+        font-size: 20px;
+    }
+    #reset-button {
+        height: 35px;
+        font-size: 20px;
+    }
+    #scroll-button {
+        height: 35px;
+        font-size: 20px;
+    }
+    .indicator-data {
+        color: #66ccff;
+        font-size: 18px;
+        word-wrap: break-word;
+    }
+    .top-button {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 30px;
+        z-index: 99;
+        border: none;
+        outline: none;
+        background-color: #555;
+        color: white;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    .top-button:hover {
+        background-color: #444;
+    }
+</style>
+</head>
+<body>
+<div id='controls'>
+<h1>Indicator List</h1>
+<div>
+    <input type='text' id='filter-keyword' placeholder='Enter keyword'>
+    <button id='filter-button' onclick='filter()'>Filter List</button>
+    <button id='reset-button' onclick='resetFilters()'>Reset filters</button>
+</div>
+</div>
+<div id='controls-select'>
+<select id='filter-type' onchange='filter()' multiple>
+<option value=''>All (ctrl+click for multi-select)</option>
+<option value='HTTP/S'>HTTP/S</option>
+<option value='FTP'>FTP</option>
+<option value='SFTP'>SFTP</option>
+<option value='SCP'>SCP</option>
+<option value='SSH'>SSH</option>
+<option value='LDAP'>LDAP</option>
+<option value='DATA'>DATA</option>
+<option value='RFC 1918 IP Address'>RFC 1918 IP Address</option>
+<option value='Non-RFC 1918 IP Address'>Non-RFC 1918 IP Address</option>
+<option value='Email'>Email</option>
+<option value='Domain'>Domain</option>
+<option value='SHA256'>SHA256</option>
+<option value='File Path'>File Path</option>
+</select>
+<button id='scroll-button' class='top-button' onclick='scrollToTop()'>Return to Top</button>
+
+</select>
+</div>
+<div id='indicators'>
+"@
+
+    Add-Content -Path $htmlFile.FullName -Value $html
+
+    $index = 0
+    foreach ($indicator in $output) {
+        $sourceFile = $indicator.'Source File'
+        $data = $indicator.Data
+        $type = $indicator.Type
+
+        $indicatorHtml = @"
+<div class='indicator' data-type='$type'>
+<strong>Data:</strong> <span class='indicator-data'>$data</span><br>
+<strong>Type:</strong> $type <br>
+<strong>Source:</strong> $sourceFile
+</div>
+"@
+        Add-Content -Path $htmlFile.FullName -Value $indicatorHtml
+        $index++
+    }
+
+    $html = @"
+</div>
+<script>
+function filter() {
+    var filterKeyword = document.getElementById('filter-keyword').value.toLowerCase();
+    var filterTypes = Array.from(document.getElementById('filter-type').selectedOptions).map(option => option.value.toLowerCase());
+    var indicators = document.getElementsByClassName('indicator');
+    for (var i = 0; i < indicators.length; i++) {
+        var matchesKeyword = filterKeyword === '' || indicators[i].textContent.toLowerCase().includes(filterKeyword);
+        var matchesType = filterTypes.includes(indicators[i].getAttribute('data-type').toLowerCase()) || filterTypes.includes('');
+        if (matchesKeyword && matchesType) {
+            indicators[i].style.display = 'block';
+        } else {
+            indicators[i].style.display = 'none';
+        }
+    }
+}
+
+function toggleInfo(index) {
+    var indicatorInfo = document.getElementById('indicator-info-' + index);
+    if (indicatorInfo.style.display === 'none') {
+        indicatorInfo.style.display = 'block';
+    } else {
+        indicatorInfo.style.display = 'none';
+    }
+}
+
+function resetFilters() {
+    document.getElementById('filter-keyword').value = '';
+    document.getElementById('filter-type').value = '';
+
+    var indicators = document.getElementsByClassName('indicator');
+    for (var i = 0; i < indicators.length; i++) {
+        indicators[i].style.display = 'block';
+    }
+}
+
+function expandAll() {
+    var infos = document.getElementsByClassName('indicator-info');
+    for (var i = 0; i < infos.length; i++) {
+        infos[i].style.display = 'block';
+    }
+}
+
+function collapseAll() {
+    var infos = document.getElementsByClassName('indicator-info');
+    for (var i = 0; i < infos.length; i++) {
+        infos[i].style.display = 'none';
+    }
+}
+
+function scrollToTop() {
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }
+  
+  window.onscroll = function() {scrollFunction()};
+  
+  function scrollFunction() {
+    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+      document.getElementById("scroll-button").style.display = "block";
+    } else {
+      document.getElementById("scroll-button").style.display = "none";
+    }
+  }
+</script>
+</body>
+</html>
+"@
+
+    Add-Content -Path $htmlFile.FullName -Value $html
+
+    Invoke-Item .\Logs\Reports\$computerName\indicators.html
+
+    $Intelligazerdone = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "Intelligazer completed at $Intelligazerdone" -ForegroundColor Cyan
+    Log_Message -logfile $logfile -Message "Intelligazer completed"
+    $textboxResults.AppendText("Intelligazer completed at $Intelligazerdone `r`n")
+}
+
+function Isolate-RemoteHost {
+    param (
+        [string]$computerName,
+        [string]$logfile
+    )
+
+    if (![string]::IsNullOrEmpty($computerName)) {
+        Invoke-Command -ComputerName $computerName -ScriptBlock {
+            $localHostIPs = (Get-NetIPAddress -AddressFamily IPv4 -CimSession localhost).IPAddress | Where-Object { $_ -notlike "127.0.0.*" }
+            $firewallProfiles = Get-NetFirewallProfile
+            if ($firewallProfiles.Enabled -contains $false) {
+                $firewallProfiles | Set-NetFirewallProfile -Enabled:True
+            }
+            $isolationRule = Get-NetFirewallRule -DisplayName "ISOLATION: Allowed Hosts" -ErrorAction SilentlyContinue
+            if (!$isolationRule) {
+                New-NetFirewallRule -DisplayName "ISOLATION: Allowed Hosts" -Direction Outbound -RemoteAddress $localHostIPs -Action Allow -Enabled:True
+            } else {
+                Set-NetFirewallRule -DisplayName "ISOLATION: Allowed Hosts" -RemoteAddress $localHostIPs
+            }
+            $firewallProfiles | Set-NetFirewallProfile -DefaultOutboundAction Block
+
+            Write-Host "$computerName isolated at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
+            Log_Message -logfile $logfile -Message "$computerName isolated"
+        }
+    } else {
+        [System.Windows.Forms.MessageBox]::Show("Please enter a valid computer name.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    }
+}
+
+function Kill-RemoteProcess {
+    param (
+        [string]$computerName,
+        [string]$selectedProcess,
+        [string]$logfile
+    )
+
+    Invoke-Command -ComputerName $computerName -ScriptBlock {
+        param ($selectedProcess)
+        Stop-Process -Id $selectedProcess -Force
+    } -ArgumentList $selectedProcess
+
+    $killproc = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "Killed process $selectedProcess on $computerName at $killproc" -ForegroundColor Cyan 
+    Log_Message -logfile $logfile -Message "Killed process $selectedProcess on $computerName"
+    $textboxResults.AppendText("Killed process $selectedProcess on $computerName at $killproc")
+}
+
+function List-CopiedFiles {
+    param (
+        [string]$CopiedFilesPath,
+        [string]$textboxResults,
+        [System.Windows.Forms.ComboBox]$comboboxlocalFilePath
+    )
+
+    if (![string]::IsNullOrEmpty($CopiedFilesPath)) {
+        try {
+            $files = Get-ChildItem -Path $CopiedFilesPath -File -Recurse | Select-Object -ExpandProperty FullName
+            $textboxResults.AppendText(($files -join "`r`n") + "`r`n")
+            $comboboxlocalFilePath.Items.Clear()
+            foreach ($file in $files) {
+                $comboboxlocalFilePath.Items.Add($file)
+            }
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Error while trying to list files in the CopiedFiles directory: $($_.Exception.Message)", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        }
+    } else {
+        [System.Windows.Forms.MessageBox]::Show("Please enter a valid CopiedFiles path.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    }
+}
+
+function Log-Message {
+    param (
+        [string]$logfile,
+        [string]$Message
+    )
+
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Add-Content -Path $logfile -Value "Time=[$timestamp] User=[$Username] Message=[$Message]"
+}

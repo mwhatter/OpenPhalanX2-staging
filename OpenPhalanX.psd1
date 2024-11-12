@@ -10,7 +10,7 @@
     PowerShellVersion = '5.1'
     RequiredModules   = @('ImportExcel', 'ActiveDirectory', 'PSSQLite', 'Microsoft.PowerShell.Utility')
     RequiredAssemblies = @('System.Windows.Forms', 'System.Web', 'System.Net.Http', 'System.Drawing')
-    FunctionsToExport = @('Log_Message', 'Get-AllComputers', 'Show-DefendingOffTheLandGUI')
+    FunctionsToExport = @('Log_Message', 'Get-AllComputers', 'Show-DefendingOffTheLandGUI', 'Copy-RemoteFile', 'Copy-RemoteModules', 'Delete-RemoteFile', 'Disable-RemoteAccount', 'Enable-RemoteAccount', 'Get-FileScan', 'Get-HostList', 'Get-Intel', 'Show-Help', 'Hunt-RemoteFile', 'Run-Intelligazer', 'Isolate-RemoteHost', 'Kill-RemoteProcess', 'List-CopiedFiles', 'Log-Message')
     AliasesToExport   = @()
     CmdletsToExport   = @()
     VariablesToExport = @()

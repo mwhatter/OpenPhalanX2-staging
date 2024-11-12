@@ -47,18 +47,6 @@ To install OpenPhalanX on a Windows host, you will need to execute a PowerShell 
    
    You will also need the ActiveDirectory powershell module. This module is part of RSAT and can be enabled by follow the instructions here - https://learn.microsoft.com/en-US/troubleshoot/windows-server/system-management-components/remote-server-administration-tools
 
-## API Keys Configuration
-
-OpenPhalanX utilizes several APIs to facilitate its operations, each of which require API keys. These keys should be added to the locations specified in the `API_Keys&Extensions.txt` file.
-
-This repository has a directory titled "Integrations" which contains additional file submission python helpers and button click code. I do not have an api key for all of these integrations and the code you select may not have been tested. 
-
-Comment out any api queries you want to exclude from the prompts for Get Intel and Sandbox URL/Retrieve Report. Add any api's you wish to query as needed(email mwhatter@openphalanx for assistance).
-
-File submissions to sandboxes should be done with reverence to the potentially sensitive data within the sample being detonated. The default file sandbox integration with OpenPhalanX is Anomali's API with specification to use their integration with VMRay. I highly recommend using either a private account with one of the provided integration examples or standing up a private instance of Cuckoo.
-
-You are responsible for complying with any API provider's usage requirements for your situation.
-
 ## Features
 
 OpenPhalanX offers an array of features designed to facilitate remote system management, monitoring, and security. 

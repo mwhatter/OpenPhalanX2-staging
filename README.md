@@ -4,7 +4,6 @@ OpenPhalanX is a comprehensive toolkit designed to secure remote systems. Whethe
 
 ## Table of Contents
 - [Installation](#installation)
-- [API Keys Configuration](#api-keys-configuration)
 - [Features](#features)
 - [Usage](#usage)
 - [Resources](#resources)

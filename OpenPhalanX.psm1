@@ -618,3 +618,220 @@ function Show-DefendingOffTheLandGUI {
     $tooltip.SetToolTip($WinEventalyzerButton, "Click to copy and threat hunt windows event logs from remote computer.")
     $tooltip.SetToolTip($buttonListCopiedFiles, "Click to view the list of files copied from the remote computer. `r`n This button populates the Local File Path dropdown.")
     $tooltip.SetToolTip($buttonGet
+
+    $tooltip.SetToolTip($buttonProcAsso, "Click to associate activity with each running process on the remote host.")
+    $tooltip.SetToolTip($buttonSelectRemoteFile, "Click to open a custom remote file system exporer.")
+    $tooltip.SetToolTip($buttonSelectLocalFile, "Click to select a file from your local machine for use.")
+    $tooltip.SetToolTip($buttonPWChange, "Click to force the specified user to change their password.")
+    $tooltip.SetToolTip($buttonLogOff, "Click to force the spefified user off of the remote computer.")
+    $tooltip.SetToolTip($buttonDisableAcc, "Click to disable the specified user's account")
+    $tooltip.SetToolTip($buttonEnableAcc, "Click to enable the specified user's account.")
+    $tooltip.SetToolTip($buttonSysInfo, "Click to retrieve AD info on the specified remote host and all users who have logged into this host. `r`n This buttton populates the Username dropdown.")
+    $tooltip.SetToolTip($buttonRestart, "Click to command the remote computer to restart.")
+    $tooltip.SetToolTip($buttonKillProcess, "Click to kill the selected process from the remote computer.")
+    $tooltip.SetToolTip($buttonShutdown, "Click to command the remote computer to shutdown.")
+    $tooltip.SetToolTip($buttonCopyFile, "Click to copy the file specified in the Remote File Path to the CopiedFiles directory on the local host.")
+    $tooltip.SetToolTip($buttonDeleteFile, "Delete the file specified in the Remote File Path from the remote host.")
+    $tooltip.SetToolTip($buttonIntelligizer, "Click to scrape indicators from collected reports and logs")
+    $tooltip.SetToolTip($buttonUndoIsolation, "Click to remove firewall rules applied for isolation.")
+
+    $Form.Add_FormClosing({
+        $ScriptEndTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        Log_Message -Message "Your session ended at $ScriptEndTime" -LogFile $LogFile
+        $textboxResults.AppendText("Your session ended at $ScriptEndTime")
+    })
+    $Form.ShowDialog()
+}
+
+function Get-FileHashSHA256 {
+    param (
+        [String]$FilePath
+    )
+    
+    $hasher = [System.Security.Cryptography.HashAlgorithm]::Create("SHA256")
+    $fileStream = New-Object -TypeName System.IO.FileStream -ArgumentList $FilePath, 'Open'
+    $hash = $hasher.ComputeHash($fileStream)
+    $fileStream.Close()
+    return ([BitConverter]::ToString($hash)).Replace("-", "")
+}
+
+function Get-File($path) {
+    $file = Get-Item $path
+    $fileType = New-Object -TypeName PSObject -Property @{
+        IsText = $file.Extension -in @(".txt", ".csv", ".log", ".evtx", ".xlsx", ".xml", ".json", ".html", ".htm", ".md", ".ps1", ".bat", ".css", ".js")  # Add any other text file extensions you want to support
+    }
+    return $fileType
+}
+
+function processMatches($content, $file) {
+    $patterns = @(
+        'HTTP/S' = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
+        'FTP' = 'ftp://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?(?:/[^\s]*)?',
+        'SFTP' = 'sftp://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?(?:/[^\s]*)?',
+        'SCP' = 'scp://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?(?:/[^\s]*)?',
+        'DATA' = 'data://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
+        'SSH' = 'ssh://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?',
+        'LDAP' = 'ldap://(?:[a-zA-Z0-9]+:[a-zA-Z0-9]+@)?(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?::[0-9]{1,5})?(?:/[^\s]*)?',
+        'RFC 1918 IP Address' = '\b(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b',
+        'Non-RFC 1918 IP Address' = '\b((?!10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3})\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b',
+        'Email' = '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    )
+
+    $matchList = New-Object System.Collections.ArrayList
+    foreach ($type in $patterns.Keys) {
+        $pattern = $patterns[$type]
+        $matchResults = [regex]::Matches($content, $pattern) | ForEach-Object {$_.Value}
+        foreach ($match in $matchResults) {
+            $newObject = New-Object PSObject -Property @{
+                'Source File' = $file
+                'Data' = $match
+                'Type' = $type
+            }
+            if ($null -ne $newObject) {
+                [void]$matchList.Add($newObject)
+            }
+
+            if ($type -eq 'HTTP/S' -and $match -match '(?i)(?:http[s]?://)?(?:www.)?([^/]+)') {
+                $parentDomain = $matches[1]
+                $domainObject = New-Object PSObject -Property @{
+                    'Source File' = $file
+                    'Data' = $parentDomain
+                    'Type' = 'Domain'
+                }
+                if ($null -ne $domainObject) {
+                    [void]$matchList.Add($domainObject)
+                }
+            }
+        }
+    }
+    return $matchList
+}
+
+function Build-HTMLProcessList {
+    param(
+        [Parameter(Mandatory=$true)]
+        [array]$processData
+    )
+
+    $html = ''
+
+    foreach ($process in ($processData | Sort-Object -Property @{Expression = { $_.ProcessInfo.ProcessId }; Ascending = $true})) {
+        if ($null -eq $process) {
+            continue
+        }
+        $processName = $process.ProcessInfo.ProcessName
+        $processId = $process.ProcessInfo.ProcessId
+        $creationDate = $process.ProcessInfo.CreationDate
+
+        if ($null -ne $processName -and $null -ne $processId -and $null -ne $creationDate) {
+            $html += "<div class='process-line' timestamp='$creationDate'>"
+            $html += "<a onclick=`"showProcessDetails('$processId'); return false;`">$processName ($processId) - Created on: $creationDate</a><br>"
+            $html += "<div id='$processId' class='process-info' style='display: none;'>"
+        }
+
+        $processInfo = $process.ProcessInfo | ConvertTo-Json -Depth 100
+
+        if ($processInfo -ne "{}") {
+            $html += $processInfo
+        }
+
+        if ($null -ne $processName -and $null -ne $processId -and $null -ne $creationDate) {
+
+            if ($process.NetTCPConnections) {
+                $html += "<br><a onclick=`"showNetworkConnections('$processId'); return false;`">Show Network Connections for Process ID: $processId</a><br>"
+                $html += "<div id='net-$processId' class='network-info' style='display: none;'>"
+                $html += ($process.NetTCPConnections | ConvertTo-Json -Depth 100)
+                $html += "</div>"
+            }
+    
+            if ($process.Modules) {
+                $html += "<a onclick=`"showModules('$processId'); return false;`">Show Modules for Process ID: $processId</a><br>"
+                $html += "<div id='mod-$processId' class='module-info' style='display: none;'>"
+                $html += ($process.Modules | ConvertTo-Json -Depth 100)
+                $html += "</div>"
+            }
+    
+            if ($process.Services) {
+                $html += "<a onclick=`"showServices('$processId'); return false;`">Show Services for Process ID: $processId</a><br>"
+                $html += "<div id='ser-$processId' class='service-info' style='display: none;'>"
+                $html += ($process.Services | ConvertTo-Json -Depth 100)
+                $html += "</div>"
+            }
+
+            if ($process.ChildProcesses) {
+                $html += "<a onclick=`"showChildProcesses('$processId'); return false;`">Show Child Processes for Process ID: $processId</a><br>"
+                $html += "<div id='child-$processId' class='child-process-info' style='display: none;'>"
+                $html += ($process.ChildProcesses | ConvertTo-Json -Depth 100)
+                $html += "</div>"
+            }
+    
+            $html += "</div></div>"
+    }
+}
+
+    return $html
+}
+
+function Get-ProcessAssociations {
+    param(
+        [Parameter(Mandatory=$false)]
+        [int]$parentId = 0,
+        [Parameter(Mandatory=$false)]
+        [int]$depth = 0,
+        [Parameter(Mandatory=$false)]
+        [array]$allProcesses,
+        [Parameter(Mandatory=$false)]
+        [array]$allWin32Processes,
+        [Parameter(Mandatory=$false)]
+        [array]$allServices,
+        [Parameter(Mandatory=$false)]
+        [array]$allNetTCPConnections,
+        [Parameter(Mandatory=$false)]
+        [bool]$isChild = $false
+    )
+    
+    if ($depth -gt 10) { return }
+
+    if ($depth -eq 0) {
+        $allProcesses = Get-Process | Where-Object { $_.Id -ne 0 }
+        $allWin32Processes = Get-CimInstance -ClassName Win32_Process | Where-Object { $_.ProcessId -ne 0 } | Sort-Object CreationDate
+        $allServices = Get-CimInstance -ClassName Win32_Service
+        $allNetTCPConnections = Get-NetTCPConnection
+    }
+    
+    $processes = if ($parentId -eq 0) {
+        $allProcesses
+    } else {
+        $allWin32Processes | Where-Object { $_.ParentProcessId -eq $parentId } | ForEach-Object { $processId = $_.ProcessId; $allProcesses | Where-Object { $_.Id -eq $processId } }
+    }
+    
+    $combinedData = @()
+    
+    $processes | ForEach-Object {
+        $process = $_
+
+        $processInfo = $allWin32Processes | Where-Object { $_.ProcessId -eq $process.Id } | Select-Object -Property CreationDate,CSName,ProcessName,CommandLine,Path,ParentProcessId,ProcessId
+        
+        $childProcesses = Get-ProcessAssociations -parentId $process.Id -depth ($depth + 1) -allProcesses $allProcesses -allWin32Processes $allWin32Processes -allServices $allServices -allNetTCPConnections $allNetTCPConnections -isChild $true
+        
+        $combinedObj = New-Object System.Collections.Specialized.OrderedDictionary
+            $combinedObj["ProcessInfo"] = $processInfo
+            $combinedObj["ChildProcesses"] = $childProcesses
+
+        if (!$isChild) {
+            $associatedServices = $allServices | Where-Object { $_.ProcessId -eq $process.Id } | select-object -Property Caption,Description,Name,StartMode,PathName,ProcessId,ServiceType,StartName,State
+            $associatedModules = $process.Modules | Select-Object @{Name = "ProcessId"; Expression = {$process.Id}}, ModuleName, FileName
+            $associatedThreads = $process.Threads | Select-Object @{Name = "ProcessId"; Expression = {$process.Id}}, Id, TotalProcessorTime, ThreadState, WaitReason
+            $NetTCPConnections = $allNetTCPConnections | Where-Object { $_.OwningProcess -eq $process.Id } | select-object -Property CreationTime,State,LocalAddress,LocalPort,OwningProcess,RemoteAddress,RemotePort
+
+            $combinedObj["NetTCPConnections"] = $NetTCPConnections
+            $combinedObj["Modules"] = $associatedModules
+            $combinedObj["Services"] = $associatedServices
+            $combinedObj["Threads"] = $associatedThreads
+        }
+
+        $combinedData += $combinedObj
+    }
+
+    return $combinedData
+}

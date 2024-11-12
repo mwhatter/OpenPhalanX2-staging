@@ -10,7 +10,7 @@
     PowerShellVersion = '5.1'
     RequiredModules   = @('ImportExcel', 'ActiveDirectory', 'PSSQLite', 'Microsoft.PowerShell.Utility')
     RequiredAssemblies = @('System.Windows.Forms', 'System.Web', 'System.Net.Http', 'System.Drawing')
-    FunctionsToExport = @('Log_Message')
+    FunctionsToExport = @('Log_Message', 'Get-AllComputers', 'Show-DefendingOffTheLandGUI')
     AliasesToExport   = @()
     CmdletsToExport   = @()
     VariablesToExport = @()
